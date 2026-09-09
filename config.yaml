@@ -11,7 +11,7 @@
 # Keep every `id` stable forever -- it is the join key for all history.
 # ---------------------------------------------------------------------------
 
-provider: amadeus          # amadeus | serpapi
+provider: serpapi          # amadeus | serpapi (amadeus keys disabled since 2026-07-17)
 currency: USD
 adults: 1                  # price ONE seat, multiply later. Group searches
                            # can surface worse fares when the cheap bucket

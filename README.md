@@ -39,15 +39,14 @@ Make it **private**. The history is yours and the config has your dates.
 
 ### 2. API credentials
 
-**Amadeus (default, free):** register at developers.amadeus.com, create a
-Self-Service app, copy the API Key and Secret. The test environment is free
-with generous limits but returns a cached subset of inventory — fine for
-trends, not exact on absolute price. Move to production keys once you're
-relying on it.
+**Amadeus is dead.** Its self-service portal was decommissioned on
+2026-07-17 and all keys are disabled. It is not usable and not the
+default — ignore any old instructions telling you to register for it.
 
-**SerpApi (optional, more accurate):** matches the Google Flights UI.
-~100 free searches/month; six routes daily exhausts that in 16 days. Either
-pay or drop to `cron: "10 14 */2 * *"`. Set `provider: serpapi`.
+**SerpApi (default, only working provider):** matches the Google Flights
+UI. ~100 free searches/month; 5 routes daily would exhaust that in ~20
+days, so the workflow polls every other day (`cron: "10 14 */2 * *"`) to
+stay under the free tier. `provider: serpapi` in `config.yaml`.
 
 ### 3. Telegram alerts
 
@@ -62,7 +61,6 @@ Settings → Secrets and variables → Actions:
 
 | Secret | Needed for |
 |---|---|
-| `AMADEUS_KEY` / `AMADEUS_SECRET` | Amadeus provider |
 | `SERPAPI_KEY` | SerpApi provider |
 | `TELEGRAM_TOKEN` / `TELEGRAM_CHAT_ID` | alerts |
 
@@ -74,7 +72,7 @@ Then Actions → flightwatch → **Run workflow** for the first run.
 
 ```
 config.yaml                  routes + alert rules            <- edit this
-providers.py                 Amadeus / SerpApi adapters
+providers.py                 SerpApi adapter (Amadeus dead since 2026-07-17)
 tracker.py                   poll -> append -> evaluate -> alert
 analyze.py                   history report, CLI, site JSON
 test_logic.py                trigger assertions, no keys needed
@@ -83,7 +81,7 @@ docs/index.html              the page
 docs/data.json               written each run, read by the page
 data/history.csv             append-only observations        <- your asset
 data/alert_state.json        debounce bookkeeping
-.github/workflows/track.yml  daily cron
+.github/workflows/track.yml  every-other-day cron
 ```
 
 CSV rather than SQLite on purpose: it diffs in git, so every daily commit is a
@@ -171,12 +169,9 @@ payload first. A total failure now pings you; a single-route failure only
 prints a warning, so skim the Actions tab monthly.
 
 **Action stops running.** GitHub disables scheduled workflows after 60 days of
-repo inactivity. The daily commit prevents this.
+repo inactivity. The every-other-day commit prevents this.
 
 **Cron runs late.** 10–30 minutes is normal and irrelevant here.
-
-**Amadeus test prices drift from reality.** Expected. Confirm on Google
-Flights before buying.
 
 ---
 
