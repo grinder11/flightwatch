@@ -1,0 +1,51 @@
+name: flightwatch
+
+on:
+  schedule:
+    # 14:10 UTC = ~07:10 PT. Off the hour on purpose: GitHub queues
+    # on-the-hour cron jobs heavily and they can run 10-30 min late.
+    - cron: "10 14 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: flightwatch
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Poll fares
+        env:
+          AMADEUS_KEY:      ${{ secrets.AMADEUS_KEY }}
+          AMADEUS_SECRET:   ${{ secrets.AMADEUS_SECRET }}
+          SERPAPI_KEY:      ${{ secrets.SERPAPI_KEY }}
+          TELEGRAM_TOKEN:   ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python tracker.py
+
+      - name: Build site payload
+        run: python analyze.py --json
+
+      - name: Commit history and site data
+        run: |
+          git config user.name  "flightwatch"
+          git config user.email "actions@github.com"
+          git add data/ docs/
+          git diff --staged --quiet && exit 0
+          git commit -m "fares $(date -u +%Y-%m-%d)"
+          # another run (or your own push) may have landed first
+          git pull --rebase --autostash origin "${GITHUB_REF_NAME}"
+          git push

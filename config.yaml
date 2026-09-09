@@ -1,0 +1,115 @@
+# ---------------------------------------------------------------------------
+# flightwatch config  --  SFO to Japan, May 2027
+# ---------------------------------------------------------------------------
+# Trip: out Fri 2027-05-14, back Sun 2027-05-23. Open jaw into HND, out of
+# KIX (Tokyo -> Kyoto -> Osaka, no backtracking).
+#
+# PTO cost is in each route's `pto` field. Your cap is 6 weekdays. Routes
+# over the cap are tracked as *levers*, not candidates: you need to know what
+# the extra day costs before deciding whether to ask for it.
+#
+# Keep every `id` stable forever -- it is the join key for all history.
+# ---------------------------------------------------------------------------
+
+provider: amadeus          # amadeus | serpapi
+currency: USD
+adults: 1                  # price ONE seat, multiply later. Group searches
+                           # can surface worse fares when the cheap bucket
+                           # has fewer than 4 seats left.
+cabin: ECONOMY
+max_stops: null            # null = allow connections (often $300 cheaper).
+                           # Counted PER DIRECTION, not summed across the trip.
+
+routes:
+  # --- the trip -------------------------------------------------------
+  - id: fri14_sun23_hnd_kix
+    origin: SFO
+    destination: HND
+    depart: 2027-05-14
+    return_origin: KIX
+    return_destination: SFO
+    return: 2027-05-23
+    pto: 6
+    note: "TARGET -- Fri out / Sun back, open jaw. 6 PTO days, at cap."
+
+  # --- the two seven-day variants -------------------------------------
+  - id: thu13_sun23_hnd_kix
+    origin: SFO
+    destination: HND
+    depart: 2027-05-13
+    return_origin: KIX
+    return_destination: SFO
+    return: 2027-05-23
+    pto: 7
+    note: "Extra day at the FRONT. Five Tokyo nights, everything downstream
+           moves deeper, no Sunday return premium. Preferred 7-day option."
+
+  - id: fri14_mon24_hnd_kix
+    origin: SFO
+    destination: HND
+    depart: 2027-05-14
+    return_origin: KIX
+    return_destination: SFO
+    return: 2027-05-24
+    pto: 7
+    note: "Extra day at the BACK. Adds a day at the loose end and dodges the
+           Sunday return premium. Weaker use of a 7th day than thu13."
+
+  # --- same dates as the target, different gate / routing --------------
+  - id: fri14_sun23_rt_hnd
+    origin: SFO
+    destination: HND
+    depart: 2027-05-14
+    return_origin: HND
+    return_destination: SFO
+    return: 2027-05-23
+    pto: 6
+    note: "Round-trip baseline -- prices the open-jaw premium. Take the RT
+           only if the open jaw costs more than about $120 extra."
+
+  - id: fri14_sun23_nrt_kix
+    origin: SFO
+    destination: NRT
+    depart: 2027-05-14
+    return_origin: KIX
+    return_destination: SFO
+    return: 2027-05-23
+    pto: 6
+    note: "Narita alternate -- only wins if it beats Haneda by $100+ per
+           ticket AND the arrival is not after 10pm."
+
+# ---------------------------------------------------------------------------
+# Alert rules. Evaluated in order; first match wins for a given route/run.
+# ---------------------------------------------------------------------------
+alerts:
+  book_now_usd: 900          # hard floor, ignores history, book on sight
+  ignore_above_usd: 1500     # ceiling -- suppress all non-FLOOR alerts above
+
+  min_observations: 12       # total history for the route before rules arm
+  new_low_window_days: 30
+  min_obs_in_window: 8       # a window must ALSO be this deep before its rule
+                             # can fire. Without it, one lonely observation
+                             # inside the 30d window yields a "lowest in 30
+                             # days" on any number below it.
+  percentile_window_days: 60
+  percentile_threshold: 20
+  drop_pct_vs_median: 12
+
+  # Debounce, keyed to the ROUTE rather than route+rule -- otherwise NEW_LOW
+  # and PERCENTILE take turns on the same slow decline and you get an alert
+  # most days. Measured on a 45-day, 6-route simulation: 29 notification days
+  # under the old per-rule key, 15 under this one.
+  cooldown_hours: 48
+  cooldown_override_pct: 5
+
+  # Absolute stop. Never more than this many alert days per route per 30 days,
+  # whatever fires. FLOOR is exempt -- a sub-$900 fare always gets through.
+  max_alerts_per_route_per_month: 6
+
+notify:
+  telegram: true
+  email: false
+  email_to: ""
+
+site:
+  json_out: docs/data.json   # written by analyze.py --json, read by the site
