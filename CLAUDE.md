@@ -36,7 +36,28 @@ python tracker.py --replay data/history.csv    # re-score stored history against
   contaminates that route's percentile history.
 - **`max_stops` counts per direction, not summed across the round trip**
   (was a bug — one connection each way used to score as 2 and would wrongly
-  reject a normal itinerary).
+  reject a normal itinerary). This is also how Google's own stops filter
+  behaves: each leg must independently satisfy the cap.
+- **SerpApi's multi-city (`type=3`) first request only sees the outbound
+  leg** — `flights`/`total_duration` in that response describe leg 1 alone.
+  `price` is already the true round-trip total (Google prices it assuming
+  the cheapest matching return), but the return leg's own stops/duration/
+  routing stay invisible until you follow that offer's `departure_token` in
+  a second request. Picking the lowest-priced return option on that
+  follow-up is what reproduces the total already quoted — confirmed
+  empirically: a $1,003 offer via a 12.5h Taipei layover matched a return
+  also via Taipei at that same $1,003 total. Without the follow-up, a cheap
+  fare can silently be paired with an atrocious return routing.
+- **Routes with `full_read: true` make that follow-up request; others don't.**
+  Full-read routes populate real `stops`/`duration_min` (worst-direction
+  count, summed duration) plus `outbound_stops`/`outbound_duration_min` and
+  `return_stops`/`return_duration_min` — each leg reported separately,
+  exactly as Google's UI shows them, never merged. Non-full-read routes only
+  ever get the `outbound_*` fields; `stops`/`duration_min` stay `None`.
+  **This doubles SerpApi quota on those routes** (2 requests instead of 1) —
+  with 3 full-read + 2 plain routes that's 8 requests/poll, ~120/month on
+  the every-other-day cron, over the ~100 free-tier cap. Slow the cron
+  further or upgrade tier if quota starts getting hit.
 - **PTO cost is per-route (`pto` field), cap is 6 weekdays.** Routes over cap
   stay in `config.yaml` as priced *levers* (what a 7th day would cost), not
   live candidates — don't treat every tracked route as bookable.
@@ -74,6 +95,10 @@ python tracker.py --replay data/history.csv    # re-score stored history against
 
 - Activate the venv in every new terminal (`source .venv/bin/activate`) —
   it's not inherited across sessions.
+- Local credentials (`SERPAPI_KEY`, `TELEGRAM_TOKEN`, `TELEGRAM_CHAT_ID`) go
+  in a gitignored `.env`; `tracker.py` loads it via `python-dotenv` at
+  import time (a no-op in CI, which has no `.env` and gets its secrets from
+  Actions env vars instead).
 - Serve `docs/` with `python -m http.server` rather than opening
   `index.html` directly; `file://` blocks the page's fetch of
   `docs/data.json`.

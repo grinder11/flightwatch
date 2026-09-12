@@ -1,11 +1,27 @@
 """
 Provider adapters. Each returns a list of dicts:
 
-    {"price": float, "carrier": str, "stops": int, "duration_min": int|None}
+    {
+        "price": float, "carrier": str,
+        "stops": int|None, "duration_min": int|None,
+        "outbound_stops": int|None, "outbound_duration_min": int|None,
+        "return_stops": int|None, "return_duration_min": int|None,
+        "return_routing": str, "full_read": bool,
+    }
 
-`stops` is the WORST direction's stop count, not the sum across the trip.
-Summing made `max_stops: 1` reject a perfectly good one-stop-each-way
-itinerary.
+Every field above must be present on every dict any provider returns --
+tracker.py subscripts them directly, no `.get()`.
+
+This mirrors how Google Flights itself shows a multi-city itinerary: each
+leg gets its own stop count and duration (outbound_* / return_*), never a
+single merged number. `stops`/`duration_min` are OUR derived combined
+values (worst-direction stop count, summed duration) for filtering and
+alerting -- only known when `full_read` is True, since that's the only
+case where the return leg's own routing has actually been read rather
+than assumed. `stops` is the WORST direction's count, not the sum across
+the trip: summing made `max_stops: 1` reject a perfectly good
+one-stop-each-way itinerary, and it's also how Google's own stops filter
+works (each leg must independently satisfy the cap).
 
 Both APIs change response shapes occasionally. If a run returns zero offers,
 print the raw payload before debugging anything else.
@@ -131,18 +147,37 @@ class Amadeus:
         total = sum(
             cls._iso_duration_min(i.get("duration")) or 0 for i in itins
         )
+        out_stops = per_dir[0] if per_dir else None
+        ret_stops = per_dir[1] if len(per_dir) > 1 else None
         return {
             "price": float(offer["price"]["grandTotal"]),
             "carrier": "/".join(sorted(c for c in carriers if c)) or "?",
             "stops": max(per_dir) if per_dir else 0,
             "duration_min": total or None,
+            "outbound_stops": out_stops,
+            "outbound_duration_min": None,
+            "return_stops": ret_stops,
+            "return_duration_min": None,
+            "return_routing": "",
+            "full_read": True,
         }
 
 
 # ---------------------------------------------------------------------------
 # SerpApi  --  scrapes Google Flights, so numbers match the UI
-# Free tier ~100 searches/month. Six routes daily = ~180/mo, so you need a
-# paid tier or an every-other-day schedule.
+# Free tier ~100 searches/month. Plain routes cost 1 request; a route with
+# `full_read: true` costs 2 (a follow-up departure_token request to confirm
+# the return leg). See README/CLAUDE.md for the current per-poll total.
+#
+# For a multi-city (type=3) search, the FIRST request only returns options
+# for the OUTBOUND leg -- `flights`/`total_duration` describe that leg alone,
+# even though `price` is already the full round-trip total (Google prices it
+# assuming the cheapest matching return). The return leg's own routing is
+# invisible until you follow that offer's `departure_token` in a second
+# request. Confirmed empirically 2026-09: a leg-1 "$1,003" offer with a
+# 12.5h Taipei layover matched a leg-2 return also via Taipei at the same
+# $1,003 total -- the price was real, just paired with a return routing we
+# couldn't see without the follow-up.
 # ---------------------------------------------------------------------------
 
 class SerpApi:
@@ -151,10 +186,10 @@ class SerpApi:
     def __init__(self):
         self.key = os.environ["SERPAPI_KEY"]
 
-    def search(self, route, cfg):
+    def _base_params(self, route, cfg):
         # type=3 is multi-city. Verify param names against current SerpApi
         # docs before trusting a zero-result run.
-        params = {
+        return {
             "engine": "google_flights",
             "api_key": self.key,
             "currency": cfg["currency"],
@@ -168,12 +203,34 @@ class SerpApi:
                 f'"arrival_id":"{route["return_destination"]}",'
                 f'"date":"{route["return"]}"}}]'
             ),
+            # deep_search=true matches what the browser shows; the default
+            # (false) is a cheaper, looser search that can return different
+            # results. travel_class/gl/hl pinned rather than left to
+            # SerpApi's per-request defaults.
+            "deep_search": "true",
+            "travel_class": "1",
+            "gl": "us",
+            "hl": "en",
         }
+
+    def _get(self, params, route_id):
         r = requests.get(self.BASE, params=params, timeout=TIMEOUT)
         r.raise_for_status()
         d = r.json()
         if d.get("error"):
             raise RuntimeError(f"serpapi: {d['error']}")
+        # Print what SerpApi actually searched -- multi_city_json silently
+        # not being honored is indistinguishable from a real price otherwise.
+        url = d.get("search_metadata", {}).get("google_flights_url")
+        print(f"[serpapi] {route_id}: {url}")
+        return d
+
+    @staticmethod
+    def _parse_leg(d):
+        """One request's worth of offers for whichever leg it was for
+        (outbound on the first request, return on a departure_token
+        follow-up). Each dict describes only THAT leg, plus enough to chain
+        to the next request."""
         offers = (d.get("best_flights") or []) + (d.get("other_flights") or [])
         out = []
         for o in offers:
@@ -184,17 +241,113 @@ class SerpApi:
             # a TypeError on every single offer. The SerpApi path could never
             # have returned anything.
             names = {l.get("airline", "") for l in legs} - {""}
+            route_ids = (
+                [legs[0]["departure_airport"]["id"]] +
+                [l["arrival_airport"]["id"] for l in legs]
+            ) if legs else []
             out.append(
                 {
                     "price": float(o["price"]),
                     "carrier": "/".join(sorted(names)) or "?",
-                    # two origin-destinations, so segments beyond 2 are stops.
-                    # Approximate: SerpApi does not split legs by direction.
-                    "stops": max(len(legs) - 2, 0),
-                    "duration_min": o.get("total_duration"),
+                    "leg_stops": max(len(legs) - 1, 0) if legs else None,
+                    "leg_duration_min": o.get("total_duration"),
+                    "departure_token": o.get("departure_token"),
+                    "route_ids": route_ids,
                 }
             )
         return out
+
+    def search(self, route, cfg):
+        params = self._base_params(route, cfg)
+        if cfg.get("max_outbound_duration_min") is not None:
+            params["max_duration"] = cfg["max_outbound_duration_min"]
+        outbound = self._parse_leg(self._get(params, route["id"]))
+        if not outbound:
+            return []
+
+        if not route.get("full_read"):
+            return [
+                {
+                    "price": o["price"],
+                    "carrier": o["carrier"],
+                    "stops": None,
+                    "duration_min": None,
+                    "outbound_stops": o["leg_stops"],
+                    "outbound_duration_min": o["leg_duration_min"],
+                    "return_stops": None,
+                    "return_duration_min": None,
+                    "return_routing": "",
+                    "full_read": False,
+                }
+                for o in outbound
+            ]
+
+        # full_read: confirm the cheapest outbound offer's actual return
+        # leg with a second (quota-costing) request. Google's own UI does
+        # the same thing -- picking an outbound flight loads a second list
+        # of return options priced against that specific choice.
+        cheapest = min(outbound, key=lambda o: o["price"])
+
+        def outbound_only(reason):
+            print(f"[warn] {route['id']}: {reason}; reporting outbound-only "
+                  f"for this run")
+            return [
+                {
+                    "price": cheapest["price"],
+                    "carrier": cheapest["carrier"],
+                    "stops": None,
+                    "duration_min": None,
+                    "outbound_stops": cheapest["leg_stops"],
+                    "outbound_duration_min": cheapest["leg_duration_min"],
+                    "return_stops": None,
+                    "return_duration_min": None,
+                    "return_routing": "",
+                    "full_read": False,
+                }
+            ]
+
+        token = cheapest.get("departure_token")
+        if not token:
+            return outbound_only("full_read requested but no departure_token "
+                                  "on the cheapest offer")
+
+        params2 = self._base_params(route, cfg)
+        params2["departure_token"] = token
+        returning = self._parse_leg(self._get(params2, f"{route['id']} (return)"))
+        if not returning:
+            return outbound_only("full_read follow-up returned no "
+                                  "return-leg offers")
+
+        # Google prices the leg-1 list assuming the cheapest matching return,
+        # so picking the lowest-priced return option here is what reproduces
+        # the total already shown for `cheapest` -- confirmed empirically:
+        # a $1,003 leg-1 offer via a 12.5h Taipei layover matched a return
+        # also via Taipei at that same $1,003 total.
+        back = min(returning, key=lambda o: o["price"])
+        # Each leg keeps its own stop count/duration, exactly as Google's UI
+        # shows them (outbound and return are never merged in the display).
+        # `stops`/`duration_min` below are OUR derived combined values --
+        # worst direction (same convention as `max_stops` everywhere else)
+        # and summed duration -- for filtering and alerting, not a native
+        # Google field.
+        combined_stops = max(cheapest["leg_stops"] or 0, back["leg_stops"] or 0)
+        combined_duration = (
+            (cheapest["leg_duration_min"] or 0) + (back["leg_duration_min"] or 0)
+        ) or None
+        return [
+            {
+                "price": back["price"],
+                "carrier": cheapest["carrier"],
+                "stops": combined_stops,
+                "duration_min": combined_duration,
+                "outbound_stops": cheapest["leg_stops"],
+                "outbound_duration_min": cheapest["leg_duration_min"],
+                "return_stops": back["leg_stops"],
+                "return_duration_min": back["leg_duration_min"],
+                "return_routing": "-".join(back["route_ids"]),
+                "full_read": True,
+            }
+        ]
 
 
 def get_provider(name):

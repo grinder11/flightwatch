@@ -20,17 +20,35 @@ from pathlib import Path
 from statistics import median
 
 import yaml
+from dotenv import load_dotenv
 
 from providers import get_provider
+
+load_dotenv()
 
 ROOT = Path(__file__).parent
 HISTORY = ROOT / "data" / "history.csv"
 STATE = ROOT / "data" / "alert_state.json"
 
 FIELDS = [
-    "ts", "route_id", "price", "carrier", "stops",
-    "duration_min", "provider", "currency",
+    "ts", "route_id", "price", "carrier",
+    # our derived combined (out+back) values -- populated only when
+    # full_read: worst-direction stop count, summed duration
+    "stops", "duration_min",
+    # per-leg values, exactly as Google Flights shows each leg -- outbound_*
+    # always populated when the leg-1 data exists; return_* only on full_read
+    "outbound_stops", "outbound_duration_min",
+    "return_stops", "return_duration_min",
+    "return_routing", "full_read",
+    "provider", "currency",
 ]
+
+
+def fmt_duration(minutes):
+    if minutes is None:
+        return "?"
+    h, m = divmod(int(minutes), 60)
+    return f"{h}h{m:02d}m"
 
 
 # ---------------------------------------------------------------------------
@@ -291,6 +309,7 @@ def main():
     provider = get_provider(cfg["provider"])
 
     new_rows, alerts, failures = [], [], []
+    warned_stops_unavailable = False
 
     for route in cfg["routes"]:
         rid = route["id"]
@@ -302,7 +321,31 @@ def main():
             continue
 
         if cfg.get("max_stops") is not None:
-            offers = [o for o in offers if o["stops"] <= cfg["max_stops"]]
+            def stop_count(o):
+                # combined (full_read) is the more accurate per-direction
+                # worst-case; fall back to outbound-leg-only otherwise.
+                return o["stops"] if o["stops"] is not None else o["outbound_stops"]
+            if not warned_stops_unavailable and any(stop_count(o) is None for o in offers):
+                print(f"[warn] stops unavailable from {cfg['provider']}; "
+                      f"max_stops is being ignored")
+                warned_stops_unavailable = True
+            offers = [
+                o for o in offers
+                if stop_count(o) is None or stop_count(o) <= cfg["max_stops"]
+            ]
+
+        max_total = cfg.get("max_total_duration_min")
+        if max_total is not None:
+            before = len(offers)
+            offers = [
+                o for o in offers
+                if not o["full_read"] or o["duration_min"] is None
+                or o["duration_min"] <= max_total
+            ]
+            if len(offers) < before:
+                print(f"[warn] {rid}: combined duration over "
+                      f"max_total_duration_min ({max_total}min); offer dropped")
+
         if not offers:
             print(f"[warn] {rid}: no offers returned")
             failures.append(rid)
@@ -320,20 +363,59 @@ def main():
             "route_id": rid,
             "price": round(best["price"], 2),
             "carrier": best["carrier"],
-            "stops": best["stops"],
+            "stops": best["stops"] if best["stops"] is not None else "",
             "duration_min": best["duration_min"] or "",
+            "outbound_stops": (
+                best["outbound_stops"] if best["outbound_stops"] is not None else ""
+            ),
+            "outbound_duration_min": best["outbound_duration_min"] or "",
+            "return_stops": (
+                best["return_stops"] if best["return_stops"] is not None else ""
+            ),
+            "return_duration_min": best["return_duration_min"] or "",
+            "return_routing": best["return_routing"],
+            "full_read": best["full_read"],
             "provider": cfg["provider"],
             "currency": cfg["currency"],
         })
+        if best["full_read"]:
+            stops_disp = (
+                f"{best['outbound_stops']} out / {best['return_stops']} back"
+            )
+            dur_disp = (
+                f"{fmt_duration(best['outbound_duration_min'])} out + "
+                f"{fmt_duration(best['return_duration_min'])} back "
+                f"= {fmt_duration(best['duration_min'])} total"
+            )
+        else:
+            stops_disp = (
+                f"{best['outbound_stops']} stop(s) outbound"
+                if best["outbound_stops"] is not None else "? stops outbound"
+            )
+            dur_disp = f"{fmt_duration(best['outbound_duration_min'])} outbound"
         print(f"{rid:24s} ${best['price']:>8,.0f}  {best['carrier']:<12s} "
-              f"{best['stops']} stop(s)")
+              f"{stops_disp}  {dur_disp}")
 
         rule, why = evaluate(rid, best["price"], hist, rules, now)
         if rule and cooldown_ok(state, rid, rule, best["price"], rules, now):
+            duration_flag = ""
+            if best["full_read"] and best["duration_min"]:
+                dur = best["duration_min"]
+                duration_flag = f"\n_combined duration: {fmt_duration(dur)} (out+back)_"
+                prefer_under = rules.get("prefer_under_min")
+                if prefer_under and dur > prefer_under:
+                    duration_flag += (
+                        f"\n_long haul: over your "
+                        f"{fmt_duration(prefer_under)} preference_"
+                    )
+            if best["full_read"]:
+                stops_note = f"{best['outbound_stops']} out / {best['return_stops']} back stops"
+            else:
+                stops_note = f"{best['outbound_stops']} stop outbound"
             alerts.append(
                 f"*{rid}*  ${best['price']:,.0f}  ({best['carrier']}, "
-                f"{best['stops']} stop, {route.get('pto', '?')} PTO days)\n"
-                f"_{why}_\n{route.get('note', '')}"
+                f"{stops_note}, {route.get('pto', '?')} PTO days)\n"
+                f"_{why}_{duration_flag}\n{route.get('note', '')}"
             )
             record_alert(state, rid, best["price"], now)
 

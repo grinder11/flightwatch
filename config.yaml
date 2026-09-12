@@ -19,6 +19,19 @@ adults: 1                  # price ONE seat, multiply later. Group searches
 cabin: ECONOMY
 max_stops: null            # null = allow connections (often $300 cheaper).
                            # Counted PER DIRECTION, not summed across the trip.
+max_outbound_duration_min: 1200
+                           # 20h hard cap on the OUTBOUND leg ONLY, passed to
+                           # SerpApi as max_duration. SerpApi's multi-city
+                           # first request can only see/filter the outbound
+                           # leg -- the return leg is invisible until a
+                           # full_read follow-up (see routes below and
+                           # max_total_duration_min).
+max_total_duration_min: 1800
+                           # 30h cap on the TRUE combined (out+back) duration.
+                           # Only enforced on routes with full_read: true --
+                           # that's the only case where the real return-leg
+                           # duration is known. Checked client-side in
+                           # tracker.py after the follow-up request.
 
 routes:
   # --- the trip -------------------------------------------------------
@@ -30,6 +43,7 @@ routes:
     return_destination: SFO
     return: 2027-05-23
     pto: 6
+    full_read: true    # confirms the real return leg -- costs a 2nd SerpApi request
     note: "TARGET -- Fri out / Sun back, open jaw. 6 PTO days, at cap."
 
   # --- the two seven-day variants -------------------------------------
@@ -41,6 +55,7 @@ routes:
     return_destination: SFO
     return: 2027-05-23
     pto: 7
+    full_read: true    # confirms the real return leg -- costs a 2nd SerpApi request
     note: "Extra day at the FRONT. Five Tokyo nights, everything downstream
            moves deeper, no Sunday return premium. Preferred 7-day option."
 
@@ -52,6 +67,7 @@ routes:
     return_destination: SFO
     return: 2027-05-24
     pto: 7
+    full_read: true    # confirms the real return leg -- costs a 2nd SerpApi request
     note: "Extra day at the BACK. Adds a day at the loose end and dodges the
            Sunday return premium. Weaker use of a 7th day than thu13."
 
@@ -64,6 +80,7 @@ routes:
     return_destination: SFO
     return: 2027-05-23
     pto: 6
+    full_read: false   # outbound-only read; single SerpApi request
     note: "Round-trip baseline -- prices the open-jaw premium. Take the RT
            only if the open jaw costs more than about $120 extra."
 
@@ -75,6 +92,7 @@ routes:
     return_destination: SFO
     return: 2027-05-23
     pto: 6
+    full_read: false   # outbound-only read; single SerpApi request
     note: "Narita alternate -- only wins if it beats Haneda by $100+ per
            ticket AND the arrival is not after 10pm."
 
@@ -94,6 +112,13 @@ alerts:
   percentile_window_days: 60
   percentile_threshold: 20
   drop_pct_vs_median: 12
+
+  prefer_under_min: 1020     # 17h soft preference on TRUE combined duration.
+                             # Longer offers still get recorded and can still
+                             # alert -- this only flags the duration in the
+                             # alert message. Only meaningful on full_read
+                             # routes; non-full_read routes have no combined
+                             # duration to compare against.
 
   # Debounce, keyed to the ROUTE rather than route+rule -- otherwise NEW_LOW
   # and PERCENTILE take turns on the same slow decline and you get an alert

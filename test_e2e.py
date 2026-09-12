@@ -19,10 +19,33 @@ class Stub:
             Stub.walks[rid] = 1250 + random.uniform(-120, 180)
         Stub.walks[rid] = max(700, Stub.walks[rid] + random.gauss(-1, 45))
         p = Stub.walks[rid]
+        full_read = route.get("full_read", False)
+
+        def offer(price, carrier):
+            out_stops = random.choice([0, 0, 1, 1, 2])
+            out_dur = random.choice([660, 780, 900])
+            if full_read:
+                ret_stops = random.choice([0, 0, 1, 1, 2])
+                ret_dur = random.choice([660, 780, 900])
+                return {
+                    "price": round(price, 2), "carrier": carrier,
+                    "stops": max(out_stops, ret_stops),
+                    "duration_min": out_dur + ret_dur,
+                    "outbound_stops": out_stops, "outbound_duration_min": out_dur,
+                    "return_stops": ret_stops, "return_duration_min": ret_dur,
+                    "return_routing": "SFO-HND-KIX-SFO", "full_read": True,
+                }
+            return {
+                "price": round(price, 2), "carrier": carrier,
+                "stops": None, "duration_min": None,
+                "outbound_stops": out_stops, "outbound_duration_min": out_dur,
+                "return_stops": None, "return_duration_min": None,
+                "return_routing": "", "full_read": False,
+            }
+
         return [
-            {"price": round(p, 2), "carrier": random.choice(CARRIERS),
-             "stops": random.choice([0, 0, 1, 1, 2]), "duration_min": random.choice([660, 780, None])},
-            {"price": round(p * 1.15, 2), "carrier": "UA", "stops": 0, "duration_min": 640},
+            offer(p, random.choice(CARRIERS)),
+            offer(p * 1.15, "UA"),
         ]
 
 
@@ -57,9 +80,9 @@ for d in range(45):
     tracker.main()
 
 print("\n" + "=" * 70)
-print(f"45 simulated days x 6 routes")
+print(f"45 simulated days x 5 routes")
 rows = list(csv.DictReader(open("data/history.csv")))
-print(f"  history.csv rows: {len(rows)}  (expect 270)")
+print(f"  history.csv rows: {len(rows)}  (expect 225)")
 print(f"  alerts sent:      {len(sent)} notifications")
 print(f"  blank duration_min cells: {sum(1 for r in rows if r['duration_min']=='')}")
 print("=" * 70)
