@@ -147,7 +147,7 @@
 
   <section>
     <h2>Every pairing, priced against the same day</h2>
-    <p class="lede">Six variants of the same trip. PTO is weekdays burned against your cap of six &mdash; the two that break it are here to price the extra day, not to be booked.</p>
+    <p class="lede" id="pairing-lede">Every variant of the same trip. PTO is weekdays burned against your cap of six &mdash; the ones that break it are here to price the extra day, not to be booked.</p>
     <table>
       <thead>
         <tr>
@@ -174,7 +174,7 @@
 
   <footer>
     <span id="stamp">No data yet.</span><br>
-    Amadeus test-environment prices track the trend, not the exact fare. Confirm on Google Flights before you pay. Native Google alerts stay on as the backstop.
+    Fares are scraped from Google Flights, so they should match what you see there directly &mdash; but SerpApi's returned offers can occasionally be incomplete. Confirm on Google Flights before you pay. Native Google alerts stay on as the backstop.
   </footer>
 </main>
 
@@ -264,6 +264,11 @@ function render(data){
     $('flag').innerHTML = '<span class="flag">Sample data. Nothing has been polled yet.</span>';
 
   if(!routes.length){ drawChart(null, data.floor); return; }
+
+  $('pairing-lede').innerHTML =
+    `Every one of the ${routes.length} variants of the same trip tracked here. `
+    + `PTO is weekdays burned against your cap of six &mdash; the ones that break `
+    + `it are here to price the extra day, not to be booked.`;
 
   $('rchips').innerHTML = routes.map(r=>
     `<button class="rchip" data-id="${r.id}" aria-pressed="false">${
