@@ -86,9 +86,10 @@ for d in range(45):
     tracker.main()
 
 print("\n" + "=" * 70)
-print(f"45 simulated days x 4 routes")
 rows = list(csv.DictReader(open("data/history.csv")))
-print(f"  history.csv rows: {len(rows)}  (expect 180)")
+n_routes = len({r["route_id"] for r in rows})
+print(f"45 simulated days x {n_routes} routes")
+print(f"  history.csv rows: {len(rows)}  (expect {45 * n_routes})")
 print(f"  alerts sent:      {len(sent)} notifications")
 print(f"  blank duration_min cells: {sum(1 for r in rows if r['duration_min']=='')}")
 print("=" * 70)
