@@ -8,6 +8,10 @@
 # over the cap are tracked as *levers*, not candidates: you need to know what
 # the extra day costs before deciding whether to ask for it.
 #
+# `nonstop: true` on a route asks SerpApi's `stops` param for nonstop-only
+# results (see providers.py) -- independent of, and not summed with, the
+# stops-allowed variant of the same dates.
+#
 # Keep every `id` stable forever -- it is the join key for all history.
 # ---------------------------------------------------------------------------
 
@@ -26,8 +30,8 @@ max_outbound_duration_min: 1200
                            # leg -- the return leg is invisible until a
                            # full_read follow-up (see routes below and
                            # max_total_duration_min).
-max_total_duration_min: 1800
-                           # 30h cap on the TRUE combined (out+back) duration.
+max_total_duration_min: 2280
+                           # 38h cap on the TRUE combined (out+back) duration.
                            # Only enforced on routes with full_read: true --
                            # that's the only case where the real return-leg
                            # duration is known. Checked client-side in
@@ -83,6 +87,49 @@ routes:
     full_read: false   # outbound-only read; single SerpApi request
     note: "Round-trip baseline -- prices the open-jaw premium. Take the RT
            only if the open jaw costs more than about $120 extra."
+
+  # --- nonstop-only variants of the 3 date pairs above ------------------
+  # TESTING/EXPLORATORY -- added to learn SerpApi's `stops` param behavior,
+  # not yet a decided permanent tracking set. Each doubles the request cost
+  # of its date pair (2 requests via full_read). With all 3 present, total
+  # quota is ~13 requests/poll (~195/month on the every-other-day cron),
+  # well over the ~100 free-tier cap -- revisit before leaving this running
+  # unattended: trim back down, or slow the cron further.
+  - id: fri14_sun23_hnd_kix_ns
+    origin: SFO
+    destination: HND
+    depart: 2027-05-14
+    return_origin: KIX
+    return_destination: SFO
+    return: 2027-05-23
+    pto: 6
+    full_read: true
+    nonstop: true
+    note: "NONSTOP TEST -- nonstop-only variant of the target pairing."
+
+  - id: thu13_sun23_hnd_kix_ns
+    origin: SFO
+    destination: HND
+    depart: 2027-05-13
+    return_origin: KIX
+    return_destination: SFO
+    return: 2027-05-23
+    pto: 7
+    full_read: true
+    nonstop: true
+    note: "NONSTOP TEST -- nonstop-only variant of the front-extra-day pairing."
+
+  - id: fri14_mon24_hnd_kix_ns
+    origin: SFO
+    destination: HND
+    depart: 2027-05-14
+    return_origin: KIX
+    return_destination: SFO
+    return: 2027-05-24
+    pto: 7
+    full_read: true
+    nonstop: true
+    note: "NONSTOP TEST -- nonstop-only variant of the back-extra-day pairing."
 
 # ---------------------------------------------------------------------------
 # Alert rules. Evaluated in order; first match wins for a given route/run.

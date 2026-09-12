@@ -48,6 +48,16 @@ python tracker.py --replay data/history.csv    # re-score stored history against
   empirically: a $1,003 offer via a 12.5h Taipei layover matched a return
   also via Taipei at that same $1,003 total. Without the follow-up, a cheap
   fare can silently be paired with an atrocious return routing.
+- **SerpApi's offer list can be incomplete vs. Google's own live UI for the
+  identical search** — confirmed empirically: a nonstop query returned only
+  2 of 3 nonstop outbound options the browser showed, dropping the cheapest
+  (JAL). Matters most for stops-allowed routes (a cheaper single leg could
+  go unseen); matters less for full_read/nonstop routes specifically, since
+  those answer "cheapest matched round trip" — the missing JAL leg didn't
+  have a comparable nonstop return partner anyway (~$3k full-nonstop total
+  via JAL, worse than the ~$1,579 pairing SerpApi did surface). No fix on
+  our end short of a different data source; just don't treat "cheapest
+  offer we got" as provably "cheapest offer that exists."
 - **Routes with `full_read: true` make that follow-up request; others don't.**
   Full-read routes populate real `stops`/`duration_min` (worst-direction
   count, summed duration) plus `outbound_stops`/`outbound_duration_min` and

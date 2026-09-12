@@ -25,6 +25,18 @@ works (each leg must independently satisfy the cap).
 
 Both APIs change response shapes occasionally. If a run returns zero offers,
 print the raw payload before debugging anything else.
+
+Confirmed empirically 2026-09: SerpApi's offer list can be incomplete
+relative to Google's own live UI for the exact same search -- a nonstop
+search returned only 2 of 3 nonstop outbound options the browser showed,
+silently dropping the cheapest (JAL). This matters most for stops-allowed
+routes, where a cheaper single leg could go unseen entirely. For full_read
+nonstop routes specifically it's less consequential: the missing JAL
+outbound didn't have a comparably-priced nonstop return partner anyway
+(its cheapest nonstop-both-ways total was ~$3k, worse than the ~$1,579
+pairing SerpApi did return) -- full_read is already answering "cheapest
+matched round trip," not "cheapest single leg," so a leg missing from the
+raw list doesn't necessarily mean a better matched total was missed.
 """
 
 import os
@@ -189,7 +201,7 @@ class SerpApi:
     def _base_params(self, route, cfg):
         # type=3 is multi-city. Verify param names against current SerpApi
         # docs before trusting a zero-result run.
-        return {
+        params = {
             "engine": "google_flights",
             "api_key": self.key,
             "currency": cfg["currency"],
@@ -212,6 +224,15 @@ class SerpApi:
             "gl": "us",
             "hl": "en",
         }
+        if route.get("nonstop"):
+            # SerpApi's own stops filter: 1 = nonstop only (2 = 1 stop or
+            # fewer, 3 = 2 stops or fewer). This asks Google's search itself
+            # for nonstop options -- unlike the client-side `max_stops`
+            # filter in tracker.py, which only discards whatever offers
+            # happened to already come back, it can't surface a nonstop
+            # option that wasn't in that returned set to begin with.
+            params["stops"] = "1"
+        return params
 
     def _get(self, params, route_id):
         r = requests.get(self.BASE, params=params, timeout=TIMEOUT)
