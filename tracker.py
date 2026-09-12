@@ -38,7 +38,9 @@ FIELDS = [
     # per-leg values, exactly as Google Flights shows each leg -- outbound_*
     # always populated when the leg-1 data exists; return_* only on full_read
     "outbound_stops", "outbound_duration_min",
+    "outbound_depart", "outbound_arrive",
     "return_stops", "return_duration_min",
+    "return_depart", "return_arrive",
     "return_routing", "full_read",
     "provider", "currency",
 ]
@@ -77,11 +79,32 @@ def load_history(path=None):
     return out
 
 
+def _migrate_history_header():
+    """If FIELDS has grown since this file was written, blind-appending under
+    the old header would misalign every column from here on -- rewrite with
+    the new header, backfilling old rows' new columns as blank."""
+    if not HISTORY.exists():
+        return
+    with HISTORY.open(newline="") as f:
+        existing_header = next(csv.reader(f), [])
+    if not existing_header or existing_header == FIELDS:
+        return
+    with HISTORY.open(newline="") as f:
+        old_rows = list(csv.DictReader(f))
+    with HISTORY.open("w", newline="") as f:
+        w = csv.DictWriter(f, fieldnames=FIELDS, restval="")
+        w.writeheader()
+        w.writerows(old_rows)
+    print(f"[info] history.csv header migrated: "
+          f"{len(existing_header)} -> {len(FIELDS)} columns")
+
+
 def append_history(rows):
     HISTORY.parent.mkdir(parents=True, exist_ok=True)
+    _migrate_history_header()
     new = not HISTORY.exists()
     with HISTORY.open("a", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=FIELDS)
+        w = csv.DictWriter(f, fieldnames=FIELDS, restval="")
         if new:
             w.writeheader()
         w.writerows(rows)
@@ -369,10 +392,14 @@ def main():
                 best["outbound_stops"] if best["outbound_stops"] is not None else ""
             ),
             "outbound_duration_min": best["outbound_duration_min"] or "",
+            "outbound_depart": best["outbound_depart"] or "",
+            "outbound_arrive": best["outbound_arrive"] or "",
             "return_stops": (
                 best["return_stops"] if best["return_stops"] is not None else ""
             ),
             "return_duration_min": best["return_duration_min"] or "",
+            "return_depart": best["return_depart"] or "",
+            "return_arrive": best["return_arrive"] or "",
             "return_routing": best["return_routing"],
             "full_read": best["full_read"],
             "provider": cfg["provider"],

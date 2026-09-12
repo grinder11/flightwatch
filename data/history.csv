@@ -1,9 +1,9 @@
-ts,route_id,price,carrier,stops,duration_min,outbound_stops,outbound_duration_min,return_stops,return_duration_min,return_routing,full_read,provider,currency
-2026-09-12T06:45:04.958444+00:00,fri14_sun23_hnd_kix,1323.0,United,1,1475,1,860,0,615,KIX-SFO,True,serpapi,USD
-2026-09-12T06:45:04.958444+00:00,thu13_sun23_hnd_kix,1323.0,United,1,1475,1,860,0,615,KIX-SFO,True,serpapi,USD
-2026-09-12T06:45:04.958444+00:00,fri14_mon24_hnd_kix,1315.0,United out / Philippine Airlines back,1,2175,1,860,1,1315,KIX-MNL-SFO,True,serpapi,USD
-2026-09-12T06:45:04.958444+00:00,fri14_sun23_rt_hnd,1312.0,United,,,1,860,,,,False,serpapi,USD
-2026-09-12T06:45:04.958444+00:00,fri14_sun23_rt_hnd_ns,1626.0,United,0,1275,0,690,0,585,HND-SFO,True,serpapi,USD
-2026-09-12T06:45:04.958444+00:00,fri14_sun23_hnd_kix_ns,1579.0,United,0,1305,0,690,0,615,KIX-SFO,True,serpapi,USD
-2026-09-12T06:45:04.958444+00:00,thu13_sun23_hnd_kix_ns,1369.0,United,0,1305,0,690,0,615,KIX-SFO,True,serpapi,USD
-2026-09-12T06:45:04.958444+00:00,fri14_mon24_hnd_kix_ns,1579.0,United,0,1305,0,690,0,615,KIX-SFO,True,serpapi,USD
+ts,route_id,price,carrier,stops,duration_min,outbound_stops,outbound_duration_min,outbound_depart,outbound_arrive,return_stops,return_duration_min,return_depart,return_arrive,return_routing,full_read,provider,currency
+2026-09-12T06:45:04.958444+00:00,fri14_sun23_hnd_kix,1323.0,United,1,1475,1,860,,,0,615,,,KIX-SFO,True,serpapi,USD
+2026-09-12T06:45:04.958444+00:00,thu13_sun23_hnd_kix,1323.0,United,1,1475,1,860,,,0,615,,,KIX-SFO,True,serpapi,USD
+2026-09-12T06:45:04.958444+00:00,fri14_mon24_hnd_kix,1315.0,United out / Philippine Airlines back,1,2175,1,860,,,1,1315,,,KIX-MNL-SFO,True,serpapi,USD
+2026-09-12T06:45:04.958444+00:00,fri14_sun23_rt_hnd,1312.0,United,,,1,860,,,,,,,,False,serpapi,USD
+2026-09-12T06:45:04.958444+00:00,fri14_sun23_rt_hnd_ns,1626.0,United,0,1275,0,690,,,0,585,,,HND-SFO,True,serpapi,USD
+2026-09-12T06:45:04.958444+00:00,fri14_sun23_hnd_kix_ns,1579.0,United,0,1305,0,690,,,0,615,,,KIX-SFO,True,serpapi,USD
+2026-09-12T06:45:04.958444+00:00,thu13_sun23_hnd_kix_ns,1369.0,United,0,1305,0,690,,,0,615,,,KIX-SFO,True,serpapi,USD
+2026-09-12T06:45:04.958444+00:00,fri14_mon24_hnd_kix_ns,1579.0,United,0,1305,0,690,,,0,615,,,KIX-SFO,True,serpapi,USD

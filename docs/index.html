@@ -107,6 +107,15 @@
   .v{font-size:12.5px; color:var(--soft)}
   .v.good{color:var(--buy); font-weight:500}
 
+  .legs{margin:14px 0 0; font-size:13px}
+  .leg{display:flex; flex-wrap:wrap; gap:4px 10px; align-items:baseline;
+    padding:7px 0; border-bottom:1px solid var(--rule)}
+  .leg:last-child{border-bottom:none}
+  .leg b{min-width:60px; font-weight:500}
+  .leg .time{font-variant-numeric:tabular-nums}
+  .leg .time sup{color:var(--soft); font-size:10px}
+  .leg .legmeta{color:var(--soft); margin-left:auto; white-space:nowrap}
+
   .group{margin-bottom:26px}
   .group:last-child{margin-bottom:0}
   .grouphead{font-family:Archivo,sans-serif; font-size:13px; font-weight:600;
@@ -154,6 +163,7 @@
       <svg id="chart" viewBox="0 0 820 190" role="img" aria-labelledby="chartcap"></svg>
     </figure>
     <p class="caption" id="chartcap">Daily low on the target pairing. The dashed line is your $900 book-on-sight floor.</p>
+    <div class="legs" id="legs"></div>
   </section>
 
   <section>
@@ -185,6 +195,53 @@
 const $ = id => document.getElementById(id);
 const usd = n => '$' + Math.round(n).toLocaleString('en-US');
 let DATA = null;
+
+function fmtDuration(min){
+  if(min == null) return '?';
+  const h = Math.floor(min/60), m = min%60;
+  return `${h}h ${String(m).padStart(2,'0')}m`;
+}
+
+function fmtClock(raw){
+  // raw: "YYYY-MM-DD HH:MM", local to that airport -- not UTC, not
+  // necessarily the same timezone as the other end of the leg.
+  const [, time] = raw.split(' ');
+  const [h, m] = time.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  return `${((h + 11) % 12) + 1}:${String(m).padStart(2,'0')} ${ampm}`;
+}
+
+function dayOffset(depRaw, arrRaw){
+  const d0 = new Date(depRaw.split(' ')[0]), d1 = new Date(arrRaw.split(' ')[0]);
+  return Math.round((d1 - d0) / 86400000);
+}
+
+function stopsText(n){
+  if(n == null) return '?';
+  return n === 0 ? 'Nonstop' : n === 1 ? '1 stop' : `${n} stops`;
+}
+
+function legLine(label, depart, arrive, durMin, stops){
+  if(!depart || !arrive)
+    return `<div class="leg"><b>${label}</b>
+      <span class="legmeta">time not recorded for this observation</span></div>`;
+  const off = dayOffset(depart, arrive);
+  const offTag = off > 0 ? `<sup>+${off}</sup>` : '';
+  return `<div class="leg"><b>${label}</b>
+    <span class="time">${fmtClock(depart)} &rarr; ${fmtClock(arrive)}${offTag}</span>
+    <span class="legmeta">${fmtDuration(durMin)} &middot; ${stopsText(stops)}</span></div>`;
+}
+
+function renderLegs(r){
+  const parts = [legLine('Outbound', r.outbound_depart, r.outbound_arrive,
+                          r.outbound_duration_min, r.outbound_stops)];
+  parts.push(r.full_read
+    ? legLine('Return', r.return_depart, r.return_arrive,
+               r.return_duration_min, r.return_stops)
+    : `<div class="leg"><b>Return</b>
+        <span class="legmeta">not confirmed &mdash; outbound-only read</span></div>`);
+  $('legs').innerHTML = parts.join('');
+}
 
 const GROUPS = [
   {key:'trip', label:'The Trip',
@@ -266,6 +323,7 @@ function select(id){
   const r = (DATA.routes||[]).find(x=>x.id===id);
   if(!r) return;
   drawChart(r, DATA.floor);
+  renderLegs(r);
   document.querySelectorAll('.rchip').forEach(c=>
     c.setAttribute('aria-pressed', String(c.dataset.id===id)));
   document.querySelectorAll('.route-row').forEach(t=>

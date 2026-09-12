@@ -58,6 +58,11 @@ def daily_lows(rows):
     return [(day, min(d[day])) for day in sorted(d)]
 
 
+def _int(v):
+    """CSV fields land as strings, '' when the source column was blank."""
+    return int(v) if v not in (None, "") else None
+
+
 def build_payload(by_route, cfg):
     notes = {r["id"]: r for r in cfg.get("routes", [])}
     rules = cfg.get("alerts", {})
@@ -91,7 +96,17 @@ def build_payload(by_route, cfg):
             "median": median(prices),
             "max": max(prices),
             "carrier": rows[-1].get("carrier", ""),
-            "stops": rows[-1].get("stops", ""),
+            "stops": _int(rows[-1].get("stops")),
+            "duration_min": _int(rows[-1].get("duration_min")),
+            "full_read": rows[-1].get("full_read") == "True",
+            "outbound_stops": _int(rows[-1].get("outbound_stops")),
+            "outbound_duration_min": _int(rows[-1].get("outbound_duration_min")),
+            "outbound_depart": rows[-1].get("outbound_depart") or "",
+            "outbound_arrive": rows[-1].get("outbound_arrive") or "",
+            "return_stops": _int(rows[-1].get("return_stops")),
+            "return_duration_min": _int(rows[-1].get("return_duration_min")),
+            "return_depart": rows[-1].get("return_depart") or "",
+            "return_arrive": rows[-1].get("return_arrive") or "",
             "verdict": verdict(prices[-1], prices),
             "series": [{"d": str(d), "p": p} for d, p in series],
         })

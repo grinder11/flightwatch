@@ -24,22 +24,28 @@ class Stub:
         def offer(price, carrier):
             out_stops = random.choice([0, 0, 1, 1, 2])
             out_dur = random.choice([660, 780, 900])
+            out_depart, out_arrive = "2027-05-14 08:45", "2027-05-15 15:05"
             if full_read:
                 ret_stops = random.choice([0, 0, 1, 1, 2])
                 ret_dur = random.choice([660, 780, 900])
+                ret_depart, ret_arrive = "2027-05-23 16:55", "2027-05-24 11:10"
                 return {
                     "price": round(price, 2), "carrier": carrier,
                     "stops": max(out_stops, ret_stops),
                     "duration_min": out_dur + ret_dur,
                     "outbound_stops": out_stops, "outbound_duration_min": out_dur,
+                    "outbound_depart": out_depart, "outbound_arrive": out_arrive,
                     "return_stops": ret_stops, "return_duration_min": ret_dur,
+                    "return_depart": ret_depart, "return_arrive": ret_arrive,
                     "return_routing": "SFO-HND-KIX-SFO", "full_read": True,
                 }
             return {
                 "price": round(price, 2), "carrier": carrier,
                 "stops": None, "duration_min": None,
                 "outbound_stops": out_stops, "outbound_duration_min": out_dur,
+                "outbound_depart": out_depart, "outbound_arrive": out_arrive,
                 "return_stops": None, "return_duration_min": None,
+                "return_depart": None, "return_arrive": None,
                 "return_routing": "", "full_read": False,
             }
 

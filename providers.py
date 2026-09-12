@@ -5,9 +5,16 @@ Provider adapters. Each returns a list of dicts:
         "price": float, "carrier": str,
         "stops": int|None, "duration_min": int|None,
         "outbound_stops": int|None, "outbound_duration_min": int|None,
+        "outbound_depart": str|None, "outbound_arrive": str|None,
         "return_stops": int|None, "return_duration_min": int|None,
+        "return_depart": str|None, "return_arrive": str|None,
         "return_routing": str, "full_read": bool,
     }
+
+`*_depart`/`*_arrive` are local clock times as SerpApi reports them
+("YYYY-MM-DD HH:MM", origin/destination local time respectively -- not
+UTC, not the same timezone as each other), spanning the whole leg (first
+segment's departure to last segment's arrival, connections included).
 
 Every field above must be present on every dict any provider returns --
 tracker.py subscripts them directly, no `.get()`.
@@ -161,6 +168,16 @@ class Amadeus:
         )
         out_stops = per_dir[0] if per_dir else None
         ret_stops = per_dir[1] if len(per_dir) > 1 else None
+
+        def leg_times(itin):
+            segs = itin.get("segments", [])
+            if not segs:
+                return None, None
+            return (segs[0].get("departure", {}).get("at"),
+                    segs[-1].get("arrival", {}).get("at"))
+
+        out_depart, out_arrive = leg_times(itins[0]) if itins else (None, None)
+        ret_depart, ret_arrive = leg_times(itins[1]) if len(itins) > 1 else (None, None)
         return {
             "price": float(offer["price"]["grandTotal"]),
             "carrier": "/".join(sorted(c for c in carriers if c)) or "?",
@@ -168,8 +185,12 @@ class Amadeus:
             "duration_min": total or None,
             "outbound_stops": out_stops,
             "outbound_duration_min": None,
+            "outbound_depart": out_depart,
+            "outbound_arrive": out_arrive,
             "return_stops": ret_stops,
             "return_duration_min": None,
+            "return_depart": ret_depart,
+            "return_arrive": ret_arrive,
             "return_routing": "",
             "full_read": True,
         }
@@ -272,6 +293,10 @@ class SerpApi:
                     "carrier": "/".join(sorted(names)) or "?",
                     "leg_stops": max(len(legs) - 1, 0) if legs else None,
                     "leg_duration_min": o.get("total_duration"),
+                    # local clock times, first segment's departure to last
+                    # segment's arrival -- spans any connection within the leg
+                    "leg_depart": legs[0]["departure_airport"]["time"] if legs else None,
+                    "leg_arrive": legs[-1]["arrival_airport"]["time"] if legs else None,
                     "departure_token": o.get("departure_token"),
                     "route_ids": route_ids,
                 }
@@ -295,8 +320,12 @@ class SerpApi:
                     "duration_min": None,
                     "outbound_stops": o["leg_stops"],
                     "outbound_duration_min": o["leg_duration_min"],
+                    "outbound_depart": o["leg_depart"],
+                    "outbound_arrive": o["leg_arrive"],
                     "return_stops": None,
                     "return_duration_min": None,
+                    "return_depart": None,
+                    "return_arrive": None,
                     "return_routing": "",
                     "full_read": False,
                 }
@@ -320,8 +349,12 @@ class SerpApi:
                     "duration_min": None,
                     "outbound_stops": cheapest["leg_stops"],
                     "outbound_duration_min": cheapest["leg_duration_min"],
+                    "outbound_depart": cheapest["leg_depart"],
+                    "outbound_arrive": cheapest["leg_arrive"],
                     "return_stops": None,
                     "return_duration_min": None,
+                    "return_depart": None,
+                    "return_arrive": None,
                     "return_routing": "",
                     "full_read": False,
                 }
@@ -374,8 +407,12 @@ class SerpApi:
                 "duration_min": combined_duration,
                 "outbound_stops": cheapest["leg_stops"],
                 "outbound_duration_min": cheapest["leg_duration_min"],
+                "outbound_depart": cheapest["leg_depart"],
+                "outbound_arrive": cheapest["leg_arrive"],
                 "return_stops": back["leg_stops"],
                 "return_duration_min": back["leg_duration_min"],
+                "return_depart": back["leg_depart"],
+                "return_arrive": back["leg_arrive"],
                 "return_routing": "-".join(back["route_ids"]),
                 "full_read": True,
             }
