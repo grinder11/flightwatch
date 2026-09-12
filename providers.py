@@ -355,10 +355,21 @@ class SerpApi:
         combined_duration = (
             (cheapest["leg_duration_min"] or 0) + (back["leg_duration_min"] or 0)
         ) or None
+        # The cheapest matching return is often a completely different
+        # airline than the outbound (confirmed empirically: a United outbound
+        # paired with a Philippine Airlines return via Manila on what Google's
+        # UI flags as a separate ticket). Collapsing to just the outbound
+        # carrier hid that. SerpApi exposes no explicit "separate tickets"
+        # flag, but showing both real carriers when they differ is simpler
+        # and doesn't depend on guessing Google's internal definition.
+        carrier = (
+            cheapest["carrier"] if cheapest["carrier"] == back["carrier"]
+            else f"{cheapest['carrier']} out / {back['carrier']} back"
+        )
         return [
             {
                 "price": back["price"],
-                "carrier": cheapest["carrier"],
+                "carrier": carrier,
                 "stops": combined_stops,
                 "duration_min": combined_duration,
                 "outbound_stops": cheapest["leg_stops"],
