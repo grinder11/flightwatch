@@ -1,73 +1,113 @@
 # flightwatch
 
-Daily fare polling with append-only price history and statistical triggers.
-Built for SFO to Japan, out Fri 14 May 2027, back Sun 23 May, 4 pairings.
+A daily fare-polling tool for a specific trip: SFO to Japan, open jaw into
+HND, out of KIX. It watches several date/routing variants of that trip at
+once (defined in `config.yaml`), keeps a permanent price history, and
+alerts on statistical triggers instead of raw price change.
 
-Runs free on GitHub Actions. No server, no database.
+Google Flights' own price-drop alerts tell you a number *changed*. They
+don't tell you whether it's actually good, because they show no history.
+This does three things those alerts can't:
 
-See `VALIDATION.md` for what was tested and what was broken.
+1. Keeps a permanent, append-only record, so a price gets judged against
+   its own past instead of vibes.
+2. Fires on percentiles and new-lows, not on "it moved."
+3. Watches every tracked date/routing variant at once, each with its PTO
+   cost attached, so a cheap adjacent date can't hide and an expensive one
+   can't tempt a decision without showing the real number.
 
----
-
-## Why this exists
-
-Google Flights alerts tell you a price *changed*. They don't tell you whether
-$1,150 is good, because they show you no history. This does three things the
-free alerts can't:
-
-1. Keeps a permanent record, so you can judge a number against its own past.
-2. Fires on percentiles instead of vibes.
-3. Watches 4 pairings at once, with the PTO cost of each attached, so a
-   cheap adjacent day can't hide and an expensive one can't tempt you into
-   a seventh day off without showing you the price.
+Runs free, no server, no database.
 
 ---
 
-## Setup
+## How it works
 
-### 1. Repo
-
-```bash
-git init flightwatch && cd flightwatch
-# drop these files in
-git add . && git commit -m "init" && git push
+```
+config.yaml  --  routes + alert thresholds (the file to edit)
+     |
+     v
+providers.py --  fetches fares (SerpApi, scraping Google Flights)
+     |
+     v
+tracker.py   --  poll -> append to data/history.csv -> evaluate alert
+     |            rules -> notify via Telegram
+     v
+analyze.py   --  reads history.csv, writes docs/data.json
+     |
+     v
+docs/        --  static site reading data.json
 ```
 
-Make it **private**. The history is yours and the config has your dates.
-(If you want the site on GitHub Pages, see the hosting note in
-`PROJECT_PLAN.md` — Pages on a private repo needs a paid plan.)
+`data/history.csv` is append-only and lives in git on purpose: every
+scheduled run's commit is a versioned snapshot of that day's fares, and the
+file diffs cleanly, which a database wouldn't.
 
-### 2. API credentials
+A GitHub Actions workflow (`.github/workflows/track.yml`) runs `tracker.py`
+on a cron, then `analyze.py --json`, then commits the results. GitHub
+Actions runs this specifically because it can `git commit` its own output
+directly — the storage design depends on that. Cloudflare Pages hosts the
+separate, read-only `docs/` site instead (see `PROJECT_PLAN.md`); a
+Cloudflare Worker has no persistent filesystem and can't write back to git,
+so it isn't a fit for the poller itself, only for serving the static page.
 
-**Amadeus is dead.** Its self-service portal was decommissioned on
-2026-07-17 and all keys are disabled. It is not usable and not the
-default — ignore any old instructions telling you to register for it.
+## Fare data: SerpApi
 
-**SerpApi (default, only working provider):** matches the Google Flights
-UI. ~100 free searches/month; 3 of the 4 routes use `full_read` (2 requests
-each) plus 1 plain route, so daily polling would exhaust the free tier in
-~2 weeks. The workflow polls every other day (`cron: "10 14 */2 * *"`),
-~105 requests/month, right at the cap. `provider: serpapi` in `config.yaml`.
+SerpApi scrapes Google Flights, so its numbers match what the browser
+shows. It's the only working provider — Amadeus's self-service portal was
+decommissioned 2026-07-17 and all keys are dead; that adapter is kept in
+`providers.py` purely as inert reference code.
 
-### 3. Telegram alerts
+Each plain route costs 1 SerpApi request per poll. Routes with
+`full_read: true` cost 2 — SerpApi's multi-city search only exposes the
+outbound leg on the first request, so `full_read` routes make a second
+`departure_token` follow-up to confirm the real return leg's stops and
+duration rather than trusting the outbound-only view. The free tier is
+~100 searches/month; the cron's cadence and the current route mix's total
+requests/poll are worth checking against that in `config.yaml`'s comments
+before changing either.
 
-1. Message `@BotFather`, send `/newbot`, copy the token.
-2. Send your new bot any message.
-3. Visit `https://api.telegram.org/bot<TOKEN>/getUpdates`, copy
-   `result[0].message.chat.id`.
+## Credentials
 
-### 4. GitHub secrets
-
-Settings → Secrets and variables → Actions:
+The workflow needs these as GitHub Actions repo secrets (Settings → Secrets
+and variables → Actions):
 
 | Secret | Needed for |
 |---|---|
-| `SERPAPI_KEY` | SerpApi provider |
-| `TELEGRAM_TOKEN` / `TELEGRAM_CHAT_ID` | alerts |
+| `SERPAPI_KEY` | fare data (serpapi.com) |
+| `TELEGRAM_TOKEN` / `TELEGRAM_CHAT_ID` | alert delivery, from a bot registered with `@BotFather` |
 
-Then Actions → flightwatch → **Run workflow** for the first run.
+Locally, the same values go in a gitignored `.env`; `tracker.py` loads it
+via `python-dotenv` (a no-op in CI, which gets its values from the secrets
+above instead).
 
----
+## Alert rules
+
+Evaluated in order, first match wins per route per run:
+
+| Rule | Fires when |
+|---|---|
+| `FLOOR` | price ≤ `book_now_usd`. Ignores history and the ceiling. Book on sight. |
+| `NEW_LOW` | lowest in `new_low_window_days`, once that window has enough observations |
+| `PERCENTILE` | below the configured percentile of the recent window |
+| `DROP` | down by the configured percentage vs. the 7-day median |
+
+Guards:
+
+- Nothing above `ignore_above_usd` alerts except `FLOOR`.
+- Statistical rules stay disarmed until `min_observations` exist for the
+  route overall, **and** until the specific window holds `min_obs_in_window`
+  — otherwise a route with old history plus one recent row could report a
+  false "lowest in 30 days" against a sample of one.
+- Cooldown is per route, not per rule, so a slow decline can't alternate
+  between two rules and alert almost daily. A material further drop
+  (`cooldown_override_pct`) still overrides the cooldown.
+- A hard cap limits non-`FLOOR` alerts per route per month.
+- If every route returns zero offers in one run, it alerts that it's blind
+  rather than exiting quietly; a single route failing just warns.
+
+`tracker.py --replay data/history.csv` re-scores stored history against
+whatever's currently in `config.yaml` — the way to see what a threshold
+change would have fired, without waiting on new data.
 
 ## Files
 
@@ -77,119 +117,61 @@ providers.py                 SerpApi adapter (Amadeus dead since 2026-07-17)
 tracker.py                   poll -> append -> evaluate -> alert
 analyze.py                   history report, CLI, site JSON
 test_logic.py                trigger assertions, no keys needed
-test_e2e.py                  45-day simulation, no keys needed
+test_e2e.py                  multi-day simulation, no keys needed
 docs/index.html              the page
 docs/data.json               written each run, read by the page
-data/history.csv             append-only observations        <- your asset
+data/history.csv             append-only observations        <- the actual asset
 data/alert_state.json        debounce bookkeeping
-.github/workflows/track.yml  every-other-day cron
+.github/workflows/track.yml  cron: poll, analyze, commit
 ```
 
-CSV rather than SQLite on purpose: it diffs in git, so every daily commit is a
-versioned snapshot.
+## Using it
 
----
-
-## Trigger rules
-
-Evaluated in order, first match wins per route per run:
-
-| Rule | Fires when |
-|---|---|
-| `FLOOR` | price ≤ `book_now_usd` ($900). Ignores history. Book on sight. |
-| `NEW_LOW` | lowest in 30 days, with at least 8 observations in that window |
-| `PERCENTILE` | below the 20th percentile of the last 60 days |
-| `DROP` | ≥12% below the 7-day median |
-
-Guards:
-
-- Nothing above `ignore_above_usd` ($1,500) alerts except `FLOOR`.
-- Statistical rules stay disarmed until `min_observations` (12) exist for the
-  route, **and** until the specific window holds `min_obs_in_window` (8).
-- Cooldown is per route, not per rule: 48h unless the price falls a further
-  5%. Keying it per rule let NEW_LOW and PERCENTILE alternate down a decline
-  and alert most days.
-- Hard cap of 6 non-FLOOR alerts per route per 30 days.
-- If every route returns zero offers, it alerts you that it's blind rather
-  than exiting quietly.
-
-Tune `book_now_usd` once you have a month of data, then use
-`tracker.py --replay` to see how many alerts the new threshold would have
-produced.
-
----
-
-## Daily use
-
-You don't. It messages you. When an alert fires:
+Day to day, you don't touch it — it messages you on Telegram when a fare
+clears a threshold. To look at the data directly:
 
 ```bash
-git pull
-python analyze.py                            # where does this sit?
+python analyze.py                            # every route, one line each
 python analyze.py --chart fri14_sun23_hnd_kix
 ```
 
-Or open the page, which says the same thing in one sentence.
+Or open the site, which says the same thing in one sentence per route.
 
----
+## Testing
 
-## Testing without credentials
-
-All three run offline, no keys:
+All three run fully offline, no API keys, no network:
 
 ```bash
-python test_logic.py                      # 14 assertions on the rules
-python test_e2e.py                        # 45 simulated days x 6 routes
+python test_logic.py                          # assertions on the trigger rules
+python test_e2e.py                            # multi-day, multi-route simulation
 python tracker.py --replay data/history.csv   # re-score stored history
 ```
 
-`--replay` is the threshold-tuning tool. Change a number in `config.yaml`,
-re-run it, see what would have fired.
+## Known limitations
 
----
+- SerpApi's returned offer list can be incomplete relative to what Google's
+  own live UI shows for the identical search — confirmed empirically, see
+  `CLAUDE.md`. There's no fix on our end short of a different data source;
+  "cheapest offer we got" isn't provably "cheapest offer that exists."
+- A zero-offer run is usually SerpApi's response shape having changed —
+  print the raw payload before debugging anything else.
+- GitHub disables a scheduled workflow after 60 days of repo inactivity;
+  the cron's own commits keep the repo active.
+- Keep the native Google Flights price-drop alerts on regardless. They cost
+  nothing, won't break when an API changes shape, and are the backstop for
+  the week this silently returns zero offers. This tool is the history and
+  percentile layer on top, not a replacement for a working free alert.
 
-## Rough calibration, SFO to Tokyo, May
-
-Starting thresholds, before your own data exists:
-
-| Price | Read |
-|---|---|
-| < $900 | book immediately |
-| $900–1,100 | good fare |
-| $1,100–1,400 | normal |
-| > $1,500 | wait |
-
-Replace with your observed p20 after ~30 days.
-
----
-
-## Failure modes
-
-**Zero offers returned.** Usually a changed API response shape. Print the raw
-payload first. A total failure now pings you; a single-route failure only
-prints a warning, so skim the Actions tab monthly.
-
-**Action stops running.** GitHub disables scheduled workflows after 60 days of
-repo inactivity. The every-other-day commit prevents this.
-
-**Cron runs late.** 10–30 minutes is normal and irrelevant here.
-
----
-
-## Worth saying plainly
-
-Keep the native Google Flights alerts on alongside this. They cost nothing,
-they won't break when an API changes shape, and they're the backstop for the
-week this silently returns zero offers. What you're buying here is the history
-and the percentile judgment — not a replacement for a working free alert.
-
----
+See `CLAUDE.md` for the full list of constraints and past bugs that matter
+for future changes, and `VALIDATION.md` for the historical build-time test
+report.
 
 ## Extending
 
-- **More pairings:** add to `routes:`. Cost is linear in API quota.
-- **Price for 4:** set `adults: 4`, but keep tracking `adults: 1` in parallel.
-  Group searches return worse fares when fewer than 4 seats remain in the
-  cheap bucket.
-- **Hotels:** the same append-CSV + percentile pattern works unchanged. Swap
-  the provider adapter.
+- **More routes:** add to `routes:` in `config.yaml`. Cost is linear in
+  SerpApi quota; `full_read`/`nonstop` routes cost double.
+- **Price for a group:** set `adults` above 1, but keep a parallel
+  single-adult route too — group searches can return worse fares once the
+  cheap fare bucket has fewer seats left than the party size.
+- **A different trip entirely:** the append-CSV + percentile pattern isn't
+  specific to flights. Swap the provider adapter and the rest holds.
