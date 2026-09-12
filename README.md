@@ -62,7 +62,7 @@ Each plain route costs 1 SerpApi request per poll. Routes with
 outbound leg on the first request, so `full_read` routes make a second
 `departure_token` follow-up to confirm the real return leg's stops and
 duration rather than trusting the outbound-only view. The free tier is
-~100 searches/month; the cron's cadence and the current route mix's total
+250 searches/month; the cron's cadence and the current route mix's total
 requests/poll are worth checking against that in `config.yaml`'s comments
 before changing either.
 

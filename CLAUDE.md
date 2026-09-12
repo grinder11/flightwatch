@@ -12,10 +12,12 @@ adapter is inert reference code.** `tracker.py` polls → evaluates → alerts;
 `analyze.py --json` writes every site payload (GitHub Pages serves `main:/docs`,
 and the poller's own commit triggers the rebuild).
 
-The site is three tabs sharing `docs/site.css` + `docs/site.js`: `index.html`
-(Flights, from `data.json`), `itinerary.html` (from `itinerary.yaml` →
-`itinerary.json`), `plans.html` (from `plans.yaml` → `plans.json`; absent by
-design, so the tab renders an empty state). Each has its own `<tab>.js`.
+The site is **Project Optimus** (the tool stays `flightwatch`), live at
+https://optimus11.lol — four tabs sharing `docs/site.css` + `docs/site.js`,
+each with its own `<tab>.js`: `index.html` (landing: headline numbers, links,
+milestone countdown), `flights.html` (from `data.json`), `itinerary.html` and
+`plans.html` (from `itinerary.yaml` / `plans.yaml`; no `plans.yaml` exists by
+design, so that tab renders an empty state).
 
 ## Commands — all offline, no keys
 
@@ -81,9 +83,9 @@ fired historically.
   `departure_token`; the cheapest return there reproduces the quoted total.
   `full_read: true` makes that second request and populates real
   `stops`/`duration_min` (worst direction, summed) plus `return_*` fields;
-  non-full-read routes get `outbound_*` only. **It doubles quota, and the
-  current mix already exceeds the ~100/month free tier — check `config.yaml`
-  before adding another `full_read`/`nonstop` route.**
+  non-full-read routes get `outbound_*` only. **It doubles quota: the current
+  mix is ~225/month against SerpApi's 250 free tier, so one more full_read
+  route goes over. Check `config.yaml`'s quota comment before adding one.**
 - **SerpApi's offer list can omit options Google's live UI shows** (confirmed
   empirically; details in `providers.py`). Never claim "cheapest that exists,"
   only "cheapest we saw."
@@ -98,6 +100,10 @@ fired historically.
   from `itinerary.yaml`'s day list — never restate them in the YAML, or the file
   can disagree with itself. The dates give 8 nights, not the 7 that
   `PROJECT_PLAN.md` assumes; the spare one currently sits in Tokyo.
+- **`itinerary.yaml` also holds project `milestones:`** (not trip days) for the
+  landing page's countdown. Three of the five supplied dates were impossible or
+  in the past and were corrected to 2027 — the header comment records what was
+  given vs. what is stored. Confirm before treating them as authoritative.
 - **The cron's `*/2` is day-of-month parity**, not "2 days after last run," so a
   month boundary can give a 1- or 3-day gap.
 

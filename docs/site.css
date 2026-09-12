@@ -93,6 +93,17 @@ h2{font-family:Archivo,sans-serif; font-size:13px; font-weight:600;
 .eyebrow{font-size:11px; font-weight:600; letter-spacing:.07em;
   text-transform:uppercase; color:var(--soft); margin:0 0 10px}
 
+/* ---------- landing hero ---------- */
+
+.hero{margin:clamp(26px,6vw,54px) 0 clamp(30px,5vw,44px)}
+.cover{
+  font-family:Newsreader,Georgia,serif; font-weight:300;
+  font-size:clamp(32px,6.4vw,58px); line-height:1.1;
+  letter-spacing:-.02em; margin:0 0 14px; max-width:18ch;
+  text-wrap:balance;
+}
+@media (max-width:560px){ .cover br{display:none} .cover{max-width:none} }
+
 /* ---------- cards ---------- */
 
 .card{
@@ -106,6 +117,17 @@ h2{font-family:Archivo,sans-serif; font-size:13px; font-weight:600;
   font-weight:600; margin:0}
 .cardhead .aside{color:var(--soft); font-size:12px}
 .cols{display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(238px,1fr))}
+/* Exactly three, side by side, until there isn't room -- auto-fit would
+   otherwise drop to 2+1 and leave an orphan. */
+.cols.three{grid-template-columns:repeat(3,1fr)}
+@media (max-width:660px){ .cols.three{grid-template-columns:1fr} }
+a.cardlink{display:block; text-decoration:none; color:inherit;
+  transition:border-color .15s ease, transform .15s ease}
+a.cardlink:hover{border-color:var(--trace); transform:translateY(-1px)}
+a.cardlink:hover h3{color:var(--trace)}
+a.cardlink .cardhead{margin-bottom:6px}
+@media(prefers-reduced-motion:reduce){ a.cardlink{transition:none}
+  a.cardlink:hover{transform:none} }
 
 /* ---------- stat row (figures, not a chart) ---------- */
 

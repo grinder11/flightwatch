@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>flightwatch — SFO to Japan, May 2027</title>
+<title>Project Optimus — Japan, May 2027</title>
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#eef1ef">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,11 +15,12 @@
 <div class="topbar">
   <div>
     <div class="masthead">
-      <b><a href="index.html">flightwatch</a></b>
+      <b><a href="index.html">Project Optimus</a></b>
       <span>SFO to Japan &middot; out Fri 14 May 2027 &middot; back Sun 23 May</span>
     </div>
     <nav class="tabs">
-      <a href="index.html" aria-current="page">Flights</a>
+      <a href="index.html" aria-current="page">Home</a>
+      <a href="flights.html">Flights</a>
       <a href="itinerary.html">Itinerary</a>
       <a href="plans.html">Plans</a>
     </nav>
@@ -27,50 +28,36 @@
 </div>
 
 <main>
-  <p class="verdict" id="verdict">Waiting for the first poll.</p>
-  <p class="sub" id="sub">Once the job runs, this line tells you whether today's cheapest fare on the trip you actually want is worth taking.</p>
-
-  <div id="flag"></div>
+  <section class="hero">
+    <p class="eyebrow">Japan &middot; May 2027 &middot; four travelling</p>
+    <h1 class="cover">Tokyo, Kyoto, Osaka.<br>Nine days, open jaw,<br>one fare worth waiting for.</h1>
+    <p class="sub" id="lede">Out of SFO on Friday 14 May 2027, into Haneda. Home from Kansai on Sunday 23 May. This page tracks the fare against its own history, holds the day-by-day plan, and counts down the dates that actually bind.</p>
+  </section>
 
   <section>
     <div class="stats" id="stats"></div>
   </section>
 
   <section>
-    <div class="rchips" id="rchips"></div>
-    <figure>
-      <svg id="chart" viewBox="0 0 820 190" role="img" aria-labelledby="chartcap"></svg>
-    </figure>
-    <p class="caption" id="chartcap">Daily low on the target pairing. The dashed line is your book-on-sight floor.</p>
-    <div class="legs" id="legs"></div>
+    <h2>Where to look</h2>
+    <p class="lede">Three views of the same trip.</p>
+    <div class="cols three" id="cards"></div>
   </section>
 
-  <section>
-    <h2>Every pairing, priced against the same day</h2>
-    <p class="lede">Grouped by role, then priced against the same day. PTO is weekdays burned against your cap of six.</p>
-    <div id="groups">
-      <p style="color:var(--soft)">No observations yet. Run the workflow once by hand to seed the file.</p>
-    </div>
-  </section>
-
-  <section>
-    <h2>What the numbers mean</h2>
-    <p class="lede">Starting thresholds, to be replaced by your own p20 after about a month of history.</p>
-    <ol class="ladder">
-      <li><b>Under $900</b><span>Book it the day you see it. Do not wait for the group chat.</span></li>
-      <li><b>$900 &ndash; 1,100</b><span>Good fare for this route and season. Take it if the dates are right.</span></li>
-      <li><b>$1,100 &ndash; 1,400</b><span>Normal. Hold unless you are inside four weeks of departure.</span></li>
-      <li><b>Over $1,500</b><span>Wait. Nothing above this even sends you an alert.</span></li>
-    </ol>
+  <section id="sec-milestones">
+    <h2>Milestones</h2>
+    <p class="lede">The dates that bind. Everything else can move.</p>
+    <ol class="days" id="milestones"></ol>
   </section>
 
   <footer>
-    <span id="stamp">No data yet.</span><br>
-    Fares are scraped from Google Flights, so they should match what you see there directly &mdash; but SerpApi's returned offers can occasionally be incomplete. Confirm on Google Flights before you pay. Native Google alerts stay on as the backstop.
+    <span id="stamp"></span><br>
+    Fares are scraped from Google Flights and judged against their own
+    history, not against a guess. Confirm on Google Flights before you pay.
   </footer>
 </main>
 
 <script src="site.js"></script>
-<script src="flights.js"></script>
+<script src="home.js"></script>
 </body>
 </html>

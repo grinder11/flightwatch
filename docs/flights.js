@@ -75,7 +75,7 @@ function drawChart(route, floor){
     parts.push(`<line class="floorline" x1="0" x2="${W}" y1="${g.Y(floor)}" y2="${g.Y(floor)}"/>`,
                `<text class="axis" x="0" y="${g.Y(floor)-6}">floor ${usd(floor)}</text>`);
   parts.push(`<line class="p20line" x1="0" x2="${W}" y1="${g.Y(route.p20)}" y2="${g.Y(route.p20)}"/>`);
-  parts.push(`<text class="axis" x="${W}" y="${g.Y(route.p20)-6}" text-anchor="end">p20 ${usd(route.p20)}</text>`);
+  parts.push(`<text class="axis" x="${W}" y="${g.Y(route.p20)-6}" text-anchor="end">good price ${usd(route.p20)}</text>`);
   parts.push(`<path class="trace" d="${g.d}"/>`);
   parts.push(`<circle cx="${g.X(pts.length-1)}" cy="${g.Y(pts[pts.length-1].p)}" r="3.6" fill="var(--trace)"/>`);
   parts.push(`<text class="axis" x="0" y="${H-2}">${pts[0].d}</text>`);
@@ -97,12 +97,12 @@ function verdictLine(r, floor){
             `Previous low was ${usd(r.min)} across ${r.n} observations.`];
   if(r.now <= r.p20)
     return [`<span class="n buy">${p}</span> sits in the bottom fifth of everything seen.`,
-            `p20 is ${usd(r.p20)}, median ${usd(r.median)}. Strong, if the dates still hold.`];
+            `A good price here is ${usd(r.p20)}; typical is ${usd(r.median)}. Strong, if the dates still hold.`];
   if(r.now <= r.median)
-    return [`<span class="n">${p}</span>, below the median but not near the floor.`,
-            `Median ${usd(r.median)}, p20 ${usd(r.p20)}, best ever ${usd(r.min)}. Defensible, not urgent.`];
-  return [`<span class="n hold">${p}</span> today. That is above the median. Wait.`,
-          `Median ${usd(r.median)}, p20 ${usd(r.p20)}, best ever seen ${usd(r.min)}.`];
+    return [`<span class="n">${p}</span>, below the typical price but not near the floor.`,
+            `Typical ${usd(r.median)}, good price ${usd(r.p20)}, best ever ${usd(r.min)}. Defensible, not urgent.`];
+  return [`<span class="n hold">${p}</span> today. That is above the typical price. Wait.`,
+          `Typical ${usd(r.median)}, good price ${usd(r.p20)}, best ever seen ${usd(r.min)}.`];
 }
 
 function select(id){
@@ -117,22 +117,26 @@ function select(id){
   const span = r.n>1 ? `${r.series.length} days of history` : 'one observation';
   $('chartcap').innerHTML =
     `<b>${r.path||r.id}</b>, ${r.depart} to ${r.back} &middot; ${r.pto ?? '—'} PTO days &middot; `
-    + `${span}. Now ${usd(r.now)}, best ever ${usd(r.min)}, p20 ${usd(r.p20)}, median ${usd(r.median)}. `
+    + `${span}. Now ${usd(r.now)}, best ever ${usd(r.min)}, good price ${usd(r.p20)}, typical ${usd(r.median)}. `
     + `Dashed line is the ${usd(DATA.floor)} book-on-sight floor.`;
 }
 
 function renderGroupRows(routes, cheapestId){
   return routes.map(r => {
     const over = r.pto > 6;
-    const good = /BEST|quintile|book it/i.test(r.verdict);
+    // "Now" is coloured when it's at or under the good-price mark -- the
+    // judgement the dropped verdict column used to spell out. Needs 5
+    // observations first: with n=1 a price trivially equals its own p20,
+    // which would paint every row green. Same threshold analyze.py uses
+    // before it will give a verdict at all.
+    const strong = r.n >= 5 && r.now <= r.p20;
     const badge = r.id === cheapestId ? '<span class="badge">cheapest now</span>' : '';
     return `<tr class="route-row" data-id="${r.id}">
       <td><span class="rid">${r.path || r.id}</span>${badge}
           <span class="meta">${r.depart} &rarr; ${r.back}${r.target?' &middot; the trip':''}</span></td>
       <td class="${over?'over':''}">${r.pto ?? '—'}${over?'&#8202;+':''}</td>
-      <td>${usd(r.now)}</td><td>${usd(r.min)}</td>
+      <td class="${strong?'v good':''}">${usd(r.now)}</td>
       <td>${usd(r.p20)}</td><td>${usd(r.median)}</td>
-      <td class="v ${good?'good':''}">${r.verdict.replace(/ --.*$/,'')}</td>
     </tr>`;
   }).join('');
 }
@@ -143,13 +147,13 @@ function renderStats(routes, target){
   const nonBaseline = routes.filter(r => r.role !== 'baseline');
   const cheapest = nonBaseline.length
     ? nonBaseline.reduce((a,b) => b.now < a.now ? b : a) : null;
-  const under = target.now <= target.p20;
+  const under = target.n >= 5 && target.now <= target.p20;
   // Each tile is one figure. A second value goes on its own sub-line rather
   // than beside it, where it wraps mid-number at narrow widths.
   $('stats').innerHTML = [
     ['The trip, today', usd(target.now), under ? 'buy' : '', ''],
     ['Best ever seen', usd(target.min), '', ''],
-    ['p20', usd(target.p20), '', `median ${usd(target.median)}`],
+    ['Good price', usd(target.p20), '', `typical ${usd(target.median)}`],
     ['Cheapest option', cheapest ? usd(cheapest.now) : '—', '',
       cheapest && cheapest.id !== target.id ? 'not the trip' : ''],
     ['Observations', String(obs), '', `${routes.length} pairings`],
@@ -196,8 +200,8 @@ function render(data){
       <p class="glede">${g.lede}</p>
       <div class="scroll"><table>
         <thead><tr>
-          <th>Pairing</th><th>PTO</th><th>Now</th><th>Low</th>
-          <th>p20</th><th>Median</th><th>Read</th>
+          <th>Pairing</th><th>PTO</th><th>Now</th>
+          <th>Good price</th><th>Typical</th>
         </tr></thead>
         <tbody>${renderGroupRows(buckets[g.key], cheapest && cheapest.id)}</tbody>
       </table></div>

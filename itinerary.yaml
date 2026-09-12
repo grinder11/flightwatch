@@ -15,6 +15,35 @@
 # consumed by the poller or the alert engine.
 # ---------------------------------------------------------------------------
 
+# Project-level dates, not trip days -- they live here so there's one YAML
+# feeding the site rather than three.
+#
+# CORRECTED FROM WHAT WAS SUPPLIED -- check these:
+#   "Flight Lock 02/15/2026"      -> 2027-02-15 (2026 is in the past; the
+#                                    plan's buy window is Dec 2026-Feb 2027)
+#   "Final Itinerary 02/30/2026"  -> 2027-02-28 (Feb 30 doesn't exist, and
+#                                    2027 isn't a leap year)
+#   "SFO synchronization 5/14/2026" -> 2027-05-14 (departure is 2027)
+milestones:
+  - date: 2026-09-11
+    name: Repo in service
+    note: "Tracker live, polling every other day, history accumulating."
+  - date: 2026-11-30
+    name: PTO committed
+    note: "Six weekdays requested and approved. Asked for in autumn it is
+           uncontroversial; asked for in March it competes with everyone."
+  - date: 2027-02-15
+    name: Flights locked
+    note: "Tickets bought. Ends the buy window that opens around Travel
+           Tuesday, 1 Dec 2026."
+  - date: 2027-02-28
+    name: Final itinerary
+    note: "Hotels booked, days fixed. Everything downstream -- sumo, rail,
+           eSIMs -- gets cheaper or easier once this is settled."
+  - date: 2027-05-14
+    name: SFO synchronization
+    note: "Four people, one departure. Wheels up."
+
 trip:
   title: Japan 2027
   party: 4

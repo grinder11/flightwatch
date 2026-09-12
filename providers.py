@@ -198,7 +198,7 @@ class Amadeus:
 
 # ---------------------------------------------------------------------------
 # SerpApi  --  scrapes Google Flights, so numbers match the UI
-# Free tier ~100 searches/month. Plain routes cost 1 request; a route with
+# Free tier 250 searches/month. Plain routes cost 1 request; a route with
 # `full_read: true` costs 2 (a follow-up departure_token request to confirm
 # the return leg). See README/CLAUDE.md for the current per-poll total.
 #

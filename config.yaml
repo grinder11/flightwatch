@@ -111,8 +111,9 @@ routes:
   # not yet a decided permanent tracking set. Each costs 2 requests via
   # full_read. With these 3 plus the double-nonstop RT baseline above,
   # total quota is ~15 requests/poll (~225/month on the every-other-day
-  # cron), well over the ~100 free-tier cap -- revisit before leaving this
-  # running unattended: trim back down, or slow the cron further.
+  # cron) against SerpApi's 250/month free tier. That fits, but with only
+  # ~25 searches of headroom: ONE more full_read route (+2/poll, +30/month)
+  # puts you over. Check this number before adding anything.
   - id: fri14_sun23_hnd_kix_ns
     origin: SFO
     destination: HND

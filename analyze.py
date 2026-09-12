@@ -167,9 +167,22 @@ def build_itinerary_payload():
         if status == "booked" and isinstance(cost, (int, float)):
             booked_cost += cost
 
+    milestones = sorted(
+        [
+            {
+                "date": str(m.get("date", "")),
+                "name": (m.get("name") or "").strip(),
+                "note": " ".join((m.get("note") or "").split()),
+            }
+            for m in doc.get("milestones") or []
+        ],
+        key=lambda m: m["date"],
+    )
+
     return {
         "generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "trip": doc.get("trip") or {},
+        "milestones": milestones,
         "days": days,
         "cities": [{"name": c, "nights": nights[c]} for c in order],
         "nights_total": sum(nights.values()),
