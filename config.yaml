@@ -48,6 +48,7 @@ routes:
     return: 2027-05-23
     pto: 6
     full_read: true    # confirms the real return leg -- costs a 2nd SerpApi request
+    target: true       # the one route the site's hero verdict/chart watches
     note: "TARGET -- Fri out / Sun back, open jaw. 6 PTO days, at cap."
 
   # --- the two seven-day variants -------------------------------------
@@ -85,6 +86,7 @@ routes:
     return: 2027-05-23
     pto: 6
     full_read: false   # outbound-only read; single SerpApi request
+    role: baseline     # not open jaw -- comparison only, never a bookable candidate
     note: "Round-trip baseline -- prices the open-jaw premium. Take the RT
            only if the open jaw costs more than about $120 extra."
 
@@ -99,6 +101,7 @@ routes:
     pto: 6
     full_read: true    # confirms the return leg is genuinely nonstop too
     nonstop: true
+    role: baseline     # not open jaw -- comparison only, never a bookable candidate
     note: "Double-nonstop baseline -- same round trip as fri14_sun23_rt_hnd
            but nonstop both ways. Prices the nonstop premium over the
            stops-allowed RT baseline."

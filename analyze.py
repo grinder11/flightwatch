@@ -75,6 +75,9 @@ def build_payload(by_route, cfg):
         out["routes"].append({
             "id": rid,
             "note": (meta.get("note") or "").strip(),
+            "target": bool(meta.get("target")),
+            "role": meta.get("role", "candidate"),
+            "nonstop": bool(meta.get("nonstop")),
             "pto": meta.get("pto"),
             "depart": str(meta.get("depart", "")),
             "back": str(meta.get("return", "")),

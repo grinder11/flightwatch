@@ -107,6 +107,17 @@
   .v{font-size:12.5px; color:var(--soft)}
   .v.good{color:var(--buy); font-weight:500}
 
+  .group{margin-bottom:26px}
+  .group:last-child{margin-bottom:0}
+  .grouphead{font-family:Archivo,sans-serif; font-size:13px; font-weight:600;
+    margin:0 0 2px; letter-spacing:.005em; display:flex; align-items:baseline; gap:8px}
+  .grouphead .count{color:var(--soft); font-weight:500; font-size:11.5px}
+  .glede{color:var(--soft); font-size:12px; margin:0 0 10px; max-width:var(--measure)}
+  .badge{display:inline-block; margin-left:7px; padding:1px 7px;
+    border:1px solid var(--buy); color:var(--buy); font-size:10px; font-weight:500;
+    border-radius:2px; letter-spacing:.03em; vertical-align:1px; white-space:nowrap}
+  .rchip.baseline{opacity:.55}
+
   ol.ladder{list-style:none; padding:0; margin:0; font-size:13.5px}
   ol.ladder li{display:flex; gap:14px; padding:8px 0;
     border-bottom:1px solid var(--rule)}
@@ -147,18 +158,10 @@
 
   <section>
     <h2>Every pairing, priced against the same day</h2>
-    <p class="lede" id="pairing-lede">Every variant of the same trip. PTO is weekdays burned against your cap of six &mdash; the ones that break it are here to price the extra day, not to be booked.</p>
-    <table>
-      <thead>
-        <tr>
-          <th>Pairing</th><th>PTO</th><th>Now</th><th>Low</th>
-          <th>p20</th><th>Median</th><th>Read</th>
-        </tr>
-      </thead>
-      <tbody id="rows">
-        <tr><td colspan="7" style="color:var(--soft)">No observations yet. Run the workflow once by hand to seed the file.</td></tr>
-      </tbody>
-    </table>
+    <p class="lede" id="pairing-lede">Grouped by role, then priced against the same day. PTO is weekdays burned against your cap of six.</p>
+    <div id="groups">
+      <p style="color:var(--soft)">No observations yet. Run the workflow once by hand to seed the file.</p>
+    </div>
   </section>
 
   <section>
@@ -181,8 +184,31 @@
 <script>
 const $ = id => document.getElementById(id);
 const usd = n => '$' + Math.round(n).toLocaleString('en-US');
-const TARGET = 'fri14_sun23_hnd_kix';
-let DATA = null, CUR = TARGET;
+let DATA = null;
+
+const GROUPS = [
+  {key:'trip', label:'The Trip',
+   lede:'The pairing this whole tracker exists to watch.'},
+  {key:'lever', label:'7-Day Variants',
+   lede:'One extra PTO day, priced two ways. Levers to know the cost of, not candidates until you decide to take the 7th day.'},
+  {key:'nonstop', label:'Nonstop Variants',
+   lede:'Same date pairs, nonstop forced both ways &mdash; prices the connection-avoidance premium.'},
+  {key:'baseline', label:'Baselines',
+   lede:'Not open jaw &mdash; a plain round trip, kept only to price the open-jaw and nonstop premiums against. Never a candidate for this trip.'},
+];
+
+function classify(r){
+  if(r.target) return 'trip';
+  if(r.role === 'baseline') return 'baseline';
+  if(r.nonstop) return 'nonstop';
+  return 'lever';
+}
+
+function bucket(routes){
+  const b = {trip:[], lever:[], nonstop:[], baseline:[]};
+  routes.forEach(r => b[classify(r)].push(r));
+  return b;
+}
 
 function line(pts, w, h, pad){
   const xs = pts.map((_,i)=>i), ys = pts.map(p=>p.p);
@@ -237,13 +263,12 @@ function verdictLine(r, floor){
 }
 
 function select(id){
-  CUR = id;
   const r = (DATA.routes||[]).find(x=>x.id===id);
   if(!r) return;
   drawChart(r, DATA.floor);
   document.querySelectorAll('.rchip').forEach(c=>
     c.setAttribute('aria-pressed', String(c.dataset.id===id)));
-  document.querySelectorAll('#rows tr').forEach(t=>
+  document.querySelectorAll('.route-row').forEach(t=>
     t.classList.toggle('sel', t.dataset.id===id));
   const span = r.n>1 ? `${r.series.length} days of history` : 'one observation';
   $('chartcap').innerHTML =
@@ -252,10 +277,26 @@ function select(id){
     + `Dashed line is the ${usd(DATA.floor)} book-on-sight floor.`;
 }
 
+function renderGroupRows(routes, cheapestId){
+  return routes.map(r => {
+    const over = r.pto > 6;
+    const good = /BEST|quintile|book it/i.test(r.verdict);
+    const badge = r.id === cheapestId ? '<span class="badge">cheapest now</span>' : '';
+    return `<tr class="route-row" data-id="${r.id}">
+      <td><span class="rid">${r.path || r.id}</span>${badge}
+          <span class="meta">${r.depart} &rarr; ${r.back}${r.target?' &middot; the trip':''}</span></td>
+      <td class="${over?'over':''}">${r.pto ?? '—'}${over?'&#8202;+':''}</td>
+      <td>${usd(r.now)}</td><td>${usd(r.min)}</td>
+      <td>${usd(r.p20)}</td><td>${usd(r.median)}</td>
+      <td class="v ${good?'good':''}">${r.verdict.replace(/ --.*$/,'')}</td>
+    </tr>`;
+  }).join('');
+}
+
 function render(data){
   DATA = data;
   const routes = data.routes || [];
-  const target = routes.find(r => r.id === TARGET) || routes[0];
+  const target = routes.find(r => r.target) || routes[0];
   const [v, s] = verdictLine(target, data.floor);
   $('verdict').innerHTML = v;
   if(s) $('sub').innerHTML = s;
@@ -265,34 +306,31 @@ function render(data){
 
   if(!routes.length){ drawChart(null, data.floor); return; }
 
-  $('pairing-lede').innerHTML =
-    `Every one of the ${routes.length} variants of the same trip tracked here. `
-    + `PTO is weekdays burned against your cap of six &mdash; the ones that break `
-    + `it are here to price the extra day, not to be booked.`;
+  const buckets = bucket(routes);
+  const orderedRoutes = GROUPS.flatMap(g => buckets[g.key]);
+  const nonBaseline = routes.filter(r => r.role !== 'baseline');
+  const cheapest = nonBaseline.length
+    ? nonBaseline.reduce((a,b) => b.now < a.now ? b : a)
+    : null;
 
-  $('rchips').innerHTML = routes.map(r=>
-    `<button class="rchip" data-id="${r.id}" aria-pressed="false">${
-      r.id===TARGET?'The trip':(r.path||r.id)}<span class="p">${usd(r.now)}</span></button>`).join('');
-  $('rchips').addEventListener('click', e=>{
-    const c = e.target.closest('.rchip'); if(c) select(c.dataset.id);
-  });
-  $('rows').innerHTML = routes.map(r => {
-    const over = r.pto > 6;
-    const good = /BEST|quintile|book it/i.test(r.verdict);
-    return `<tr data-id="${r.id}" class="${r.id===TARGET?'target':''}">
-      <td><span class="rid">${r.path || r.id}</span>
-          <span class="meta">${r.depart} &rarr; ${r.back}${r.id===TARGET?' &middot; the trip':''}</span></td>
-      <td class="${over?'over':''}">${r.pto ?? '—'}${over?'&#8202;+':''}</td>
-      <td>${usd(r.now)}</td><td>${usd(r.min)}</td>
-      <td>${usd(r.p20)}</td><td>${usd(r.median)}</td>
-      <td class="v ${good?'good':''}">${r.verdict.replace(/ --.*$/,'')}</td>
-    </tr>`;
-  }).join('');
+  $('rchips').innerHTML = orderedRoutes.map(r=>
+    `<button class="rchip${r.role==='baseline'?' baseline':''}" data-id="${r.id}" aria-pressed="false">${
+      r.target?'The trip':(r.path||r.id)}<span class="p">${usd(r.now)}</span></button>`).join('');
 
-  $('rows').addEventListener('click', e=>{
-    const t = e.target.closest('tr'); if(t && t.dataset.id) select(t.dataset.id);
-  });
-  select(routes.some(r=>r.id===TARGET) ? TARGET : routes[0].id);
+  $('groups').innerHTML = GROUPS.filter(g => buckets[g.key].length).map(g => `
+    <div class="group">
+      <h3 class="grouphead">${g.label} <span class="count">${buckets[g.key].length}</span></h3>
+      <p class="glede">${g.lede}</p>
+      <table>
+        <thead><tr>
+          <th>Pairing</th><th>PTO</th><th>Now</th><th>Low</th>
+          <th>p20</th><th>Median</th><th>Read</th>
+        </tr></thead>
+        <tbody>${renderGroupRows(buckets[g.key], cheapest && cheapest.id)}</tbody>
+      </table>
+    </div>`).join('');
+
+  select(target.id);
 
   const obs = routes.reduce((a,r)=>a+r.n,0);
   $('stamp').textContent =
@@ -300,6 +338,13 @@ function render(data){
     (data.generated ? new Date(data.generated).toLocaleString('en-US',
       {dateStyle:'medium', timeStyle:'short'}) : 'unknown') + '.';
 }
+
+$('rchips').addEventListener('click', e=>{
+  const c = e.target.closest('.rchip'); if(c) select(c.dataset.id);
+});
+$('groups').addEventListener('click', e=>{
+  const t = e.target.closest('.route-row'); if(t && t.dataset.id) select(t.dataset.id);
+});
 
 const SAMPLE = {sample:true, floor:900, generated:null, routes:[]};
 fetch('data.json', {cache:'no-store'})
