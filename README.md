@@ -1,7 +1,7 @@
 # flightwatch
 
 Daily fare polling with append-only price history and statistical triggers.
-Built for SFO to Japan, out Fri 14 May 2027, back Sun 23 May, six pairings.
+Built for SFO to Japan, out Fri 14 May 2027, back Sun 23 May, 4 pairings.
 
 Runs free on GitHub Actions. No server, no database.
 
@@ -17,7 +17,7 @@ free alerts can't:
 
 1. Keeps a permanent record, so you can judge a number against its own past.
 2. Fires on percentiles instead of vibes.
-3. Watches six pairings at once, with the PTO cost of each attached, so a
+3. Watches 4 pairings at once, with the PTO cost of each attached, so a
    cheap adjacent day can't hide and an expensive one can't tempt you into
    a seventh day off without showing you the price.
 
@@ -44,9 +44,10 @@ Make it **private**. The history is yours and the config has your dates.
 default — ignore any old instructions telling you to register for it.
 
 **SerpApi (default, only working provider):** matches the Google Flights
-UI. ~100 free searches/month; 5 routes daily would exhaust that in ~20
-days, so the workflow polls every other day (`cron: "10 14 */2 * *"`) to
-stay under the free tier. `provider: serpapi` in `config.yaml`.
+UI. ~100 free searches/month; 3 of the 4 routes use `full_read` (2 requests
+each) plus 1 plain route, so daily polling would exhaust the free tier in
+~2 weeks. The workflow polls every other day (`cron: "10 14 */2 * *"`),
+~105 requests/month, right at the cap. `provider: serpapi` in `config.yaml`.
 
 ### 3. Telegram alerts
 

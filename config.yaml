@@ -71,7 +71,7 @@ routes:
     note: "Extra day at the BACK. Adds a day at the loose end and dodges the
            Sunday return premium. Weaker use of a 7th day than thu13."
 
-  # --- same dates as the target, different gate / routing --------------
+  # --- same dates as the target, round-trip instead of open jaw --------
   - id: fri14_sun23_rt_hnd
     origin: SFO
     destination: HND
@@ -83,18 +83,6 @@ routes:
     full_read: false   # outbound-only read; single SerpApi request
     note: "Round-trip baseline -- prices the open-jaw premium. Take the RT
            only if the open jaw costs more than about $120 extra."
-
-  - id: fri14_sun23_nrt_kix
-    origin: SFO
-    destination: NRT
-    depart: 2027-05-14
-    return_origin: KIX
-    return_destination: SFO
-    return: 2027-05-23
-    pto: 6
-    full_read: false   # outbound-only read; single SerpApi request
-    note: "Narita alternate -- only wins if it beats Haneda by $100+ per
-           ticket AND the arrival is not after 10pm."
 
 # ---------------------------------------------------------------------------
 # Alert rules. Evaluated in order; first match wins for a given route/run.

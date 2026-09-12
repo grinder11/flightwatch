@@ -67,7 +67,7 @@ yourself, written down before you're emotional about it: **take anything at or
 below your recalibrated floor on the target pairing, same day, without
 consulting the group chat.** Group consensus is how good fares expire.
 
-Keep the native Google Flights alerts on the same six pairings throughout.
+Keep the native Google Flights alerts on the same 4 pairings throughout.
 They're the backstop for the week this returns zero offers and you don't
 notice.
 

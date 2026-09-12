@@ -12,7 +12,7 @@ the file to edit for day-to-day tuning. `providers.py` adapts Amadeus and
 SerpApi, but **Amadeus decommissioned its self-service portal on
 2026-07-17 and all keys are disabled** — it is not usable and not the
 default. SerpApi is the only working provider: ~100 free searches/month,
-so 5 routes needs an every-other-day cron to stay in the free tier.
+so 4 routes needs an every-other-day cron to stay in the free tier.
 `tracker.py` does poll → append → evaluate → alert; `analyze.py` produces
 reports and the `docs/data.json` the static site reads.
 
@@ -55,9 +55,9 @@ python tracker.py --replay data/history.csv    # re-score stored history against
   exactly as Google's UI shows them, never merged. Non-full-read routes only
   ever get the `outbound_*` fields; `stops`/`duration_min` stay `None`.
   **This doubles SerpApi quota on those routes** (2 requests instead of 1) —
-  with 3 full-read + 2 plain routes that's 8 requests/poll, ~120/month on
-  the every-other-day cron, over the ~100 free-tier cap. Slow the cron
-  further or upgrade tier if quota starts getting hit.
+  with 3 full-read + 1 plain route that's 7 requests/poll, ~105/month on
+  the every-other-day cron, right at the ~100 free-tier cap. Slow the cron
+  further (every 3 days brings it to ~70/month) if quota starts getting hit.
 - **PTO cost is per-route (`pto` field), cap is 6 weekdays.** Routes over cap
   stay in `config.yaml` as priced *levers* (what a 7th day would cost), not
   live candidates — don't treat every tracked route as bookable.

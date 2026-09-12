@@ -80,9 +80,9 @@ for d in range(45):
     tracker.main()
 
 print("\n" + "=" * 70)
-print(f"45 simulated days x 5 routes")
+print(f"45 simulated days x 4 routes")
 rows = list(csv.DictReader(open("data/history.csv")))
-print(f"  history.csv rows: {len(rows)}  (expect 225)")
+print(f"  history.csv rows: {len(rows)}  (expect 180)")
 print(f"  alerts sent:      {len(sent)} notifications")
 print(f"  blank duration_min cells: {sum(1 for r in rows if r['duration_min']=='')}")
 print("=" * 70)
