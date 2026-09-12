@@ -34,21 +34,19 @@
   <div id="flag"></div>
 
   <section>
-    <div class="stats" id="stats"></div>
-  </section>
-
-  <section>
     <div class="rchips" id="rchips"></div>
     <figure>
       <svg id="chart" viewBox="0 0 820 190" role="img" aria-labelledby="chartcap"></svg>
     </figure>
     <p class="caption" id="chartcap">Daily low on the target pairing. The dashed line is your book-on-sight floor.</p>
+    <div class="stats grid6" id="routestats"></div>
+    <p class="lede" id="statnote"></p>
     <div class="legs" id="legs"></div>
   </section>
 
   <section>
     <h2>Every pairing, priced against the same day</h2>
-    <p class="lede">Grouped by role, priced against the same day. PTO is weekdays burned against your cap of six. <b>Good price</b> is the mark only a fifth of observations have beaten; <b>Typical</b> is the middle of everything seen. Today's price turns green when it beats the good-price mark.</p>
+    <p class="lede">Grouped by role, priced against the same day. PTO is weekdays burned against your cap of six. <b>Median</b> is the middle price for that pairing — half its observations above, half below — so <b>Now</b> under it is cheap by that route's own history. Pick any row to see its full breakdown under the chart.</p>
     <div id="groups">
       <p style="color:var(--soft)">No observations yet. Run the workflow once by hand to seed the file.</p>
     </div>

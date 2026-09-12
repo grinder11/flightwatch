@@ -75,7 +75,7 @@ function drawChart(route, floor){
     parts.push(`<line class="floorline" x1="0" x2="${W}" y1="${g.Y(floor)}" y2="${g.Y(floor)}"/>`,
                `<text class="axis" x="0" y="${g.Y(floor)-6}">floor ${usd(floor)}</text>`);
   parts.push(`<line class="p20line" x1="0" x2="${W}" y1="${g.Y(route.p20)}" y2="${g.Y(route.p20)}"/>`);
-  parts.push(`<text class="axis" x="${W}" y="${g.Y(route.p20)-6}" text-anchor="end">good price ${usd(route.p20)}</text>`);
+  parts.push(`<text class="axis" x="${W}" y="${g.Y(route.p20)-6}" text-anchor="end">20th %ile ${usd(route.p20)}</text>`);
   parts.push(`<path class="trace" d="${g.d}"/>`);
   parts.push(`<circle cx="${g.X(pts.length-1)}" cy="${g.Y(pts[pts.length-1].p)}" r="3.6" fill="var(--trace)"/>`);
   parts.push(`<text class="axis" x="0" y="${H-2}">${pts[0].d}</text>`);
@@ -97,34 +97,36 @@ function verdictLine(r, floor){
             `Previous low was ${usd(r.min)} across ${r.n} observations.`];
   if(r.now <= r.p20)
     return [`<span class="n buy">${p}</span> sits in the bottom fifth of everything seen.`,
-            `A good price here is ${usd(r.p20)}; typical is ${usd(r.median)}. Strong, if the dates still hold.`];
+            `The 20th percentile is ${usd(r.p20)}, the median ${usd(r.median)}. Strong, if the dates still hold.`];
   if(r.now <= r.median)
-    return [`<span class="n">${p}</span>, below the typical price but not near the floor.`,
-            `Typical ${usd(r.median)}, good price ${usd(r.p20)}, best ever ${usd(r.min)}. Defensible, not urgent.`];
-  return [`<span class="n hold">${p}</span> today. That is above the typical price. Wait.`,
-          `Typical ${usd(r.median)}, good price ${usd(r.p20)}, best ever seen ${usd(r.min)}.`];
+    return [`<span class="n">${p}</span>, below the median but not near the floor.`,
+            `Median ${usd(r.median)}, 20th percentile ${usd(r.p20)}, best ever ${usd(r.min)}. Defensible, not urgent.`];
+  return [`<span class="n hold">${p}</span> today. That is above the median. Wait.`,
+          `Median ${usd(r.median)}, 20th percentile ${usd(r.p20)}, best ever seen ${usd(r.min)}.`];
 }
 
 function select(id){
   const r = (DATA.routes||[]).find(x=>x.id===id);
   if(!r) return;
   drawChart(r, DATA.floor);
+  renderRouteStats(r);
   renderLegs(r);
   document.querySelectorAll('.rchip').forEach(c=>
     c.setAttribute('aria-pressed', String(c.dataset.id===id)));
   document.querySelectorAll('.route-row').forEach(t=>
     t.classList.toggle('sel', t.dataset.id===id));
   const span = r.n>1 ? `${r.series.length} days of history` : 'one observation';
+  // The numbers live in the tiles below; this line only identifies what is
+  // being charted.
   $('chartcap').innerHTML =
-    `<b>${r.path||r.id}</b>, ${r.depart} to ${r.back} &middot; ${r.pto ?? '—'} PTO days &middot; `
-    + `${span}. Now ${usd(r.now)}, best ever ${usd(r.min)}, good price ${usd(r.p20)}, typical ${usd(r.median)}. `
-    + `Dashed line is the ${usd(DATA.floor)} book-on-sight floor.`;
+    `<b>${r.path||r.id}</b>, ${r.depart} to ${r.back} &middot; ${r.pto ?? '—'} PTO days `
+    + `&middot; ${span}. Dashed line is the ${usd(DATA.floor)} book-on-sight floor.`;
 }
 
 function renderGroupRows(routes, cheapestId){
   return routes.map(r => {
     const over = r.pto > 6;
-    // "Now" is coloured when it's at or under the good-price mark -- the
+    // "Now" is coloured when it's at or under the 20th percentile -- the
     // judgement the dropped verdict column used to spell out. Needs 5
     // observations first: with n=1 a price trivially equals its own p20,
     // which would paint every row green. Same threshold analyze.py uses
@@ -136,32 +138,38 @@ function renderGroupRows(routes, cheapestId){
           <span class="meta">${r.depart} &rarr; ${r.back}${r.target?' &middot; the trip':''}</span></td>
       <td class="${over?'over':''}">${r.pto ?? '—'}${over?'&#8202;+':''}</td>
       <td class="${strong?'v good':''}">${usd(r.now)}</td>
-      <td>${usd(r.p20)}</td><td>${usd(r.median)}</td>
+      <td>${usd(r.median)}</td>
     </tr>`;
   }).join('');
 }
 
-function renderStats(routes, target){
-  if(!target) return;
-  const obs = routes.reduce((a,r)=>a+r.n,0);
-  const nonBaseline = routes.filter(r => r.role !== 'baseline');
-  const cheapest = nonBaseline.length
-    ? nonBaseline.reduce((a,b) => b.now < a.now ? b : a) : null;
-  const under = target.n >= 5 && target.now <= target.p20;
-  // Each tile is one figure. A second value goes on its own sub-line rather
-  // than beside it, where it wraps mid-number at narrow widths.
-  $('stats').innerHTML = [
-    ['The trip, today', usd(target.now), under ? 'buy' : '', ''],
-    ['Best ever seen', usd(target.min), '', ''],
-    ['Good price', usd(target.p20), '', `typical ${usd(target.median)}`],
-    ['Cheapest option', cheapest ? usd(cheapest.now) : '—', '',
-      cheapest && cheapest.id !== target.id ? 'not the trip' : ''],
-    ['Observations', String(obs), '', `${routes.length} pairings`],
-  ].map(([k,v,cls,sub]) =>
+/* Full breakdown for whichever pairing is selected, under the chart. This
+   is where every statistic lives -- the table above stays at PTO / Now /
+   Median so it stays readable on a phone. */
+function renderRouteStats(r){
+  const thin = r.n < 5;
+  const tiles = [
+    ['Now', usd(r.now), !thin && r.now <= r.p20 ? 'buy' : '', ''],
+    ['Best ever', usd(r.min), '', 'lowest recorded'],
+    ['20th %ile', usd(r.p20), '', '4 in 5 were higher'],
+    ['Median', usd(r.median), '', '50th %ile'],
+    ['Highest', usd(r.max), '', 'worst recorded'],
+    ['Observations', String(r.n), '', r.n === 1 ? 'one poll' : `${r.series.length} days`],
+  ];
+  $('routestats').innerHTML = tiles.map(([k,v,cls,sub]) =>
     `<div class="stat"><span class="k">${k}</span>
       <span class="v ${cls}">${v}</span>
       ${sub ? `<span class="k" style="margin:4px 0 0">${sub}</span>` : ''}</div>`
   ).join('');
+
+  $('statnote').innerHTML = thin
+    ? `Only ${r.n} observation${r.n === 1 ? '' : 's'} so far, so these all sit on `
+      + 'top of each other. They separate as history accumulates; the alert '
+      + 'rules stay disarmed until twelve.'
+    : `Percentiles are over this pairing's own history, not across routes. `
+      + `The 20th percentile (${usd(r.p20)}) is the price four out of five `
+      + `observations were above; the median (${usd(r.median)}) has half above `
+      + `and half below.`;
 }
 
 function render(data){
@@ -176,7 +184,7 @@ function render(data){
     $('flag').innerHTML = '<span class="flag">Sample data. Nothing has been polled yet.</span>';
 
   if(!routes.length){
-    $('stats').hidden = true;   // an empty grid still draws its border box
+    $('routestats').hidden = true;  // an empty grid still draws its border box
     drawChart(null, data.floor);
     return;
   }
@@ -188,8 +196,6 @@ function render(data){
     ? nonBaseline.reduce((a,b) => b.now < a.now ? b : a)
     : null;
 
-  renderStats(routes, target);
-
   $('rchips').innerHTML = orderedRoutes.map(r=>
     `<button class="rchip${r.role==='baseline'?' baseline':''}" data-id="${r.id}" aria-pressed="false">${
       r.target?'The trip':(r.path||r.id)}<span class="p">${usd(r.now)}</span></button>`).join('');
@@ -200,8 +206,7 @@ function render(data){
       <p class="glede">${g.lede}</p>
       <div class="scroll"><table>
         <thead><tr>
-          <th>Pairing</th><th>PTO</th><th>Now</th>
-          <th>Good price</th><th>Typical</th>
+          <th>Pairing</th><th>PTO</th><th>Now</th><th>Median</th>
         </tr></thead>
         <tbody>${renderGroupRows(buckets[g.key], cheapest && cheapest.id)}</tbody>
       </table></div>

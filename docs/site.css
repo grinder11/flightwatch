@@ -134,6 +134,11 @@ a.cardlink .cardhead{margin-bottom:6px}
 .stats{display:grid; gap:1px; background:var(--rule);
   border:1px solid var(--rule); border-radius:var(--radius);
   grid-template-columns:repeat(auto-fit,minmax(128px,1fr)); overflow:hidden}
+/* A six-tile block needs a column count that divides into six, or auto-fit
+   orphans the last one and the container background paints the empty track
+   as a solid slab. */
+.stats.grid6{grid-template-columns:repeat(3,1fr)}
+@media (max-width:560px){ .stats.grid6{grid-template-columns:repeat(2,1fr)} }
 .stat{background:var(--card); padding:12px 14px 13px}
 .stat .k{display:block; color:var(--soft); font-size:11px; font-weight:500;
   letter-spacing:.05em; text-transform:uppercase; margin-bottom:3px}

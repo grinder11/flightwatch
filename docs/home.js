@@ -18,7 +18,7 @@ function renderStats(target, it){
       out > 0 ? '14 May 2027' : ''],
     ['The trip, today', target ? usd(target.now) : '—',
       target && target.n >= 5 && target.now <= target.p20 ? 'buy' : '',
-      target ? (target.n >= 5 ? `good price ${usd(target.p20)}`
+      target ? (target.n >= 5 ? `20th %ile ${usd(target.p20)}`
                               : `${target.n} day${target.n === 1 ? '' : 's'} of history`)
              : 'no fares polled yet'],
     ['Nights on the ground', it ? it.nights_total : '—', '',
