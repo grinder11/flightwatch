@@ -1,0 +1,174 @@
+{
+ "generated": "2026-09-12T20:32:47+00:00",
+ "trip": {
+  "title": "Japan 2027",
+  "party": 4,
+  "note": "Six PTO days, exactly at cap. Fares tracked on the Flights tab; nothing on this page is booked until it says so."
+ },
+ "days": [
+  {
+   "date": "2027-05-14",
+   "city": "transit",
+   "title": "SFO \u2192 HND",
+   "note": "Leaves Friday, lands Saturday -- the date line eats a day. Bags checked through; Yamato-forward the big ones from the airport so the first evening isn't spent hauling them.",
+   "transit": true
+  },
+  {
+   "date": "2027-05-15",
+   "city": "Tokyo",
+   "title": "Land Haneda, settle in",
+   "note": "Arrival afternoon. Nothing scheduled -- Suica/Welcome Suica on the phone, eat close to the hotel, sleep early to break the jet lag.",
+   "transit": false
+  },
+  {
+   "date": "2027-05-16",
+   "city": "Tokyo",
+   "title": "Central Tokyo on foot",
+   "note": "First full day. Keep it walkable and low-commitment while everyone is still on the wrong clock.",
+   "transit": false
+  },
+  {
+   "date": "2027-05-17",
+   "city": "Tokyo",
+   "title": "Sumo \u2014 Natsu basho, Ry\u014dgoku",
+   "note": "The one fixed-cost ticket. Natsu basho runs mid-May at the Kokugikan; a weekday masu-seki box seats exactly four. Confirm the 2027 dates when the schedule publishes and move this day to match.",
+   "transit": false
+  },
+  {
+   "date": "2027-05-18",
+   "city": "Tokyo",
+   "title": "Open",
+   "note": "Day trip if the group wants one -- Nikk\u014d, Kamakura, Hakone all work as a single out-and-back from Tokyo.",
+   "transit": false
+  },
+  {
+   "date": "2027-05-19",
+   "city": "Tokyo",
+   "title": "Open \u2014 last Tokyo day",
+   "note": "The spare eighth night lives here. Pack for the Shinkansen; Yamato the big bags ahead to the Kyoto hotel rather than carrying them.",
+   "transit": false
+  },
+  {
+   "date": "2027-05-20",
+   "city": "Kyoto",
+   "title": "Shinkansen to Kyoto",
+   "note": "Morning train, ~2h20m on the Nozomi. Reserve point-to-point on Smart EX -- this routing never earns a JR Pass back.",
+   "transit": false
+  },
+  {
+   "date": "2027-05-21",
+   "city": "Kyoto",
+   "title": "Kyoto, full day",
+   "note": "The one day with no travel attached. Early start beats the coach tours to anything well known.",
+   "transit": false
+  },
+  {
+   "date": "2027-05-22",
+   "city": "Osaka",
+   "title": "Kyoto \u2192 Osaka",
+   "note": "Short hop, under an hour. Last night of the trip, and the one that has to be near enough to KIX for a morning flight.",
+   "transit": false
+  },
+  {
+   "date": "2027-05-23",
+   "city": "transit",
+   "title": "KIX \u2192 SFO",
+   "note": "Morning departure out of Kansai, home the same calendar day. Allow for the airport being an hour out from central Osaka.",
+   "transit": true
+  }
+ ],
+ "cities": [
+  {
+   "name": "Tokyo",
+   "nights": 5
+  },
+  {
+   "name": "Kyoto",
+   "nights": 2
+  },
+  {
+   "name": "Osaka",
+   "nights": 1
+  }
+ ],
+ "nights_total": 8,
+ "bookings": [
+  {
+   "what": "Flights \u2014 SFO\u2192HND out, KIX\u2192SFO back",
+   "kind": "flight",
+   "city": "",
+   "status": "watching",
+   "when": "Dec 2026 \u2013 Feb 2027",
+   "cost_usd": null,
+   "note": "Tracked on the Flights tab. Rule set in advance: at or below the recalibrated floor on the target pairing, book same day without consulting the group chat."
+  },
+  {
+   "what": "Tokyo hotel \u2014 5 nights",
+   "kind": "hotel",
+   "city": "Tokyo",
+   "status": "open",
+   "when": "Feb \u2013 Mar 2027",
+   "cost_usd": null,
+   "note": "Free-cancellation rate, booked early, re-checked in April."
+  },
+  {
+   "what": "Kyoto hotel \u2014 2 nights",
+   "kind": "hotel",
+   "city": "Kyoto",
+   "status": "open",
+   "when": "Feb \u2013 Mar 2027",
+   "cost_usd": null,
+   "note": "Free-cancellation rate. Kyoto sells out earlier than Tokyo."
+  },
+  {
+   "what": "Osaka hotel \u2014 1 night",
+   "kind": "hotel",
+   "city": "Osaka",
+   "status": "open",
+   "when": "Feb \u2013 Mar 2027",
+   "cost_usd": null,
+   "note": "Near enough to a KIX train for a morning departure."
+  },
+  {
+   "what": "Sumo \u2014 masu-seki box for four, Ry\u014dgoku",
+   "kind": "event",
+   "city": "Tokyo",
+   "status": "open",
+   "when": "Apr 2027",
+   "cost_usd": null,
+   "note": "On sale roughly a month ahead; the good boxes move fast. A weekday box seats exactly four."
+  },
+  {
+   "what": "Shinkansen \u2014 Tokyo\u2192Kyoto, Kyoto\u2192Osaka",
+   "kind": "rail",
+   "city": "",
+   "status": "open",
+   "when": "Apr 2027",
+   "cost_usd": null,
+   "note": "Point-to-point on Smart EX. Skip the JR Pass -- this routing doesn't earn it back."
+  },
+  {
+   "what": "eSIMs \u00d74",
+   "kind": "connectivity",
+   "city": "",
+   "status": "open",
+   "when": "Apr 2027",
+   "cost_usd": null,
+   "note": "Four individual eSIMs, not one shared pocket wifi -- the group splits up during the day."
+  },
+  {
+   "what": "Yamato luggage forwarding, between hotels",
+   "kind": "logistics",
+   "city": "",
+   "status": "open",
+   "when": "May 2027, at the front desk",
+   "cost_usd": null,
+   "note": "Arranged on the day, hotel to hotel. Turns both train legs into hand-luggage-only."
+  }
+ ],
+ "counts": {
+  "watching": 1,
+  "open": 7
+ },
+ "booked_cost_usd": null
+}

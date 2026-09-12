@@ -9,7 +9,13 @@ raw price change. No server, no database.
 count and quota math in its own comments. `providers.py` fetches — **SerpApi
 only; Amadeus decommissioned self-service 2026-07-17, keys are dead, that
 adapter is inert reference code.** `tracker.py` polls → evaluates → alerts;
-`analyze.py` writes `docs/data.json` for the site (GitHub Pages, `main:/docs`).
+`analyze.py --json` writes every site payload (GitHub Pages serves `main:/docs`,
+and the poller's own commit triggers the rebuild).
+
+The site is three tabs sharing `docs/site.css` + `docs/site.js`: `index.html`
+(Flights, from `data.json`), `itinerary.html` (from `itinerary.yaml` →
+`itinerary.json`), `plans.html` (from `plans.yaml` → `plans.json`; absent by
+design, so the tab renders an empty state). Each has its own `<tab>.js`.
 
 ## Commands — all offline, no keys
 
@@ -17,7 +23,8 @@ adapter is inert reference code.** `tracker.py` polls → evaluates → alerts;
 python test_logic.py                         # trigger-rule assertions
 python test_e2e.py                           # 45-day sim; CLOBBERS data/, see below
 python tracker.py --replay data/history.csv  # re-score history against current config
-python analyze.py --json                     # rebuild docs/data.json
+python analyze.py --json                     # rebuild every docs/*.json payload
+cd docs && python -m http.server             # preview the site; file:// blocks its fetches
 ```
 
 `--replay` is the tuning loop: change a threshold, rerun, see what would have
@@ -87,6 +94,10 @@ fired historically.
   whatever its `pto` — so fix the buckets rather than mislabel a route.
 - **PTO cap is 6 weekdays**, per route via `pto`. Over-cap routes are priced
   levers, not bookable candidates.
+- **Nights per city and booking counts are derived** in `build_itinerary_payload()`
+  from `itinerary.yaml`'s day list — never restate them in the YAML, or the file
+  can disagree with itself. The dates give 8 nights, not the 7 that
+  `PROJECT_PLAN.md` assumes; the spare one currently sits in Tokyo.
 - **The cron's `*/2` is day-of-month parity**, not "2 days after last run," so a
   month boundary can give a 1- or 3-day gap.
 
@@ -95,6 +106,4 @@ fired historically.
 - `source .venv/bin/activate` in every new shell — it isn't inherited.
 - `SERPAPI_KEY`, `TELEGRAM_TOKEN`, `TELEGRAM_CHAT_ID` go in a gitignored
   `.env`, loaded at import time (a no-op in CI, which uses Actions secrets).
-- Serve `docs/` with `python -m http.server`; `file://` blocks its `data.json`
-  fetch.
 - Only real observations belong in `data/history.csv`.

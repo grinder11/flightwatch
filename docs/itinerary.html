@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Itinerary — Japan 2027</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#eef1ef">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<div class="topbar">
+  <div>
+    <div class="masthead">
+      <b><a href="index.html">flightwatch</a></b>
+      <span>SFO to Japan &middot; out Fri 14 May 2027 &middot; back Sun 23 May</span>
+    </div>
+    <nav class="tabs">
+      <a href="index.html">Flights</a>
+      <a href="itinerary.html" aria-current="page">Itinerary</a>
+      <a href="plans.html">Plans</a>
+    </nav>
+  </div>
+</div>
+
+<main>
+  <p class="verdict" id="verdict">Loading the itinerary&hellip;</p>
+  <p class="sub" id="sub"></p>
+
+  <div id="shell"></div>
+
+  <section>
+    <div class="stats" id="stats"></div>
+  </section>
+
+  <section id="sec-days">
+    <h2>Day by day</h2>
+    <p class="lede">Tokyo, then Kyoto, then Osaka &mdash; no backtracking, flying home out of KIX. Transit days are dimmed.</p>
+    <ol class="days" id="days"></ol>
+  </section>
+
+  <section id="sec-bookings">
+    <h2>Bookings</h2>
+    <p class="lede">Everything that needs paying for, in the order it comes up. Costs are party totals, not per person.</p>
+    <div id="bookings"></div>
+  </section>
+
+  <footer>
+    <span id="stamp"></span><br>
+    Edit <code>itinerary.yaml</code> in the repo root, not this page. Nights per
+    city are counted from the day list, so the two can't disagree.
+  </footer>
+</main>
+
+<script src="site.js"></script>
+<script src="itinerary.js"></script>
+</body>
+</html>

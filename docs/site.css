@@ -1,0 +1,243 @@
+/* flightwatch -- shared shell for all three tabs.
+   Editorial type (Newsreader / Archivo, paper + ink) with commercial
+   structure: sticky tab nav, cards, stat rows. Every colour is a token
+   defined once on :root and re-stepped for dark mode. */
+
+:root{
+  --paper:#eef1ef;
+  --card:#f7f9f7;
+  --ink:#131a21;
+  --soft:#5d6b70;
+  --rule:#c6cfcb;
+  --hair:#dbe2de;
+  --trace:#24506b;
+  --buy:#14603f;
+  --floor:#8f2f1e;
+  --measure:64ch;
+  --radius:3px;
+  --shell:820px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#12181a; --card:#171f21; --ink:#e6ebe8; --soft:#93a2a4;
+    --rule:#2c3639; --hair:#222b2d; --trace:#79b0d6; --buy:#5fc397;
+    --floor:#e08b74;
+  }
+}
+
+*{box-sizing:border-box}
+/* .stats sets display:grid, which outranks the UA sheet's [hidden] rule --
+   without this, hiding an empty grid leaves its border box drawn. */
+[hidden]{display:none !important}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:Archivo,system-ui,sans-serif;
+  font-size:15px; line-height:1.55;
+  font-variant-numeric:tabular-nums;
+}
+main{max-width:var(--shell); margin:0 auto;
+  padding:clamp(22px,4vw,40px) clamp(18px,5vw,48px) 96px}
+section{margin-bottom:clamp(32px,5vw,52px)}
+section:last-child{margin-bottom:0}
+
+/* ---------- sticky shell ---------- */
+
+.topbar{
+  position:sticky; top:0; z-index:10;
+  /* Near-opaque: at 88% the day list showed through the masthead and read
+     as a rendering smudge rather than a frosted panel. */
+  background:color-mix(in srgb, var(--paper) 97%, transparent);
+  backdrop-filter:saturate(1.4) blur(10px);
+  border-bottom:1px solid var(--rule);
+}
+.topbar > div{max-width:var(--shell); margin:0 auto;
+  padding:0 clamp(18px,5vw,48px)}
+.masthead{
+  display:flex; justify-content:space-between; align-items:baseline;
+  gap:16px; flex-wrap:wrap; padding-top:13px;
+}
+.masthead b{font-weight:600; letter-spacing:.01em}
+.masthead b a{color:inherit; text-decoration:none}
+.masthead span{color:var(--soft); font-size:13px}
+
+.tabs{display:flex; gap:clamp(14px,3vw,26px); margin-top:9px}
+.tabs a{
+  display:block; padding:7px 1px 9px; color:var(--soft);
+  text-decoration:none; font-size:13px; font-weight:500;
+  letter-spacing:.005em; border-bottom:2px solid transparent;
+  margin-bottom:-1px; white-space:nowrap;
+}
+.tabs a:hover{color:var(--ink)}
+.tabs a[aria-current="page"]{color:var(--trace); border-bottom-color:var(--trace)}
+.tabs a .n{opacity:.6; font-weight:400; margin-left:5px; font-size:12px}
+
+/* ---------- type ---------- */
+
+.verdict{
+  font-family:Newsreader,Georgia,serif; font-weight:300;
+  font-size:clamp(28px,5.4vw,46px); line-height:1.18;
+  letter-spacing:-.014em; margin:clamp(24px,5vw,44px) 0 6px;
+  max-width:var(--measure); text-wrap:balance;
+}
+.verdict .n{font-weight:500; font-variant-numeric:lining-nums tabular-nums}
+.verdict .buy{color:var(--buy)}
+.verdict .hold{color:var(--ink)}
+.sub{color:var(--soft); max-width:var(--measure); margin:0 0 30px}
+.sub a{color:inherit}
+
+h2{font-family:Archivo,sans-serif; font-size:13px; font-weight:600;
+   margin:0 0 2px; letter-spacing:.005em}
+.lede{color:var(--soft); font-size:13px; margin:0 0 14px;
+      max-width:var(--measure)}
+.eyebrow{font-size:11px; font-weight:600; letter-spacing:.07em;
+  text-transform:uppercase; color:var(--soft); margin:0 0 10px}
+
+/* ---------- cards ---------- */
+
+.card{
+  background:var(--card); border:1px solid var(--rule);
+  border-radius:var(--radius); padding:clamp(14px,2.4vw,20px);
+}
+.card + .card{margin-top:12px}
+.cardhead{display:flex; justify-content:space-between; align-items:baseline;
+  gap:12px; flex-wrap:wrap; margin-bottom:10px}
+.cardhead h3{font-family:Archivo,sans-serif; font-size:13.5px;
+  font-weight:600; margin:0}
+.cardhead .aside{color:var(--soft); font-size:12px}
+.cols{display:grid; gap:12px; grid-template-columns:repeat(auto-fit,minmax(238px,1fr))}
+
+/* ---------- stat row (figures, not a chart) ---------- */
+
+.stats{display:grid; gap:1px; background:var(--rule);
+  border:1px solid var(--rule); border-radius:var(--radius);
+  grid-template-columns:repeat(auto-fit,minmax(128px,1fr)); overflow:hidden}
+.stat{background:var(--card); padding:12px 14px 13px}
+.stat .k{display:block; color:var(--soft); font-size:11px; font-weight:500;
+  letter-spacing:.05em; text-transform:uppercase; margin-bottom:3px}
+.stat .v{font-family:Newsreader,Georgia,serif; font-weight:400;
+  font-size:26px; line-height:1.1; letter-spacing:-.01em;
+  font-variant-numeric:lining-nums tabular-nums}
+.stat .v.buy{color:var(--buy)}
+.stat .u{color:var(--soft); font-size:12px; margin-left:4px;
+  font-family:Archivo,sans-serif}
+
+/* ---------- chart ---------- */
+
+figure{margin:0 0 8px}
+svg{display:block; width:100%; height:auto; overflow:visible}
+.axis{font-size:11px; fill:var(--soft); font-family:Archivo,sans-serif}
+.trace{fill:none; stroke:var(--trace); stroke-width:2;
+       stroke-linejoin:round; stroke-linecap:round}
+.floorline{stroke:var(--floor); stroke-width:1; stroke-dasharray:2 4}
+.p20line{stroke:var(--rule); stroke-width:1}
+.caption{color:var(--soft); font-size:12.5px; margin:0 0 40px}
+@media(prefers-reduced-motion:no-preference){
+  .trace{stroke-dasharray:2400; stroke-dashoffset:2400;
+         animation:draw 1.1s cubic-bezier(.2,.7,.3,1) forwards}
+}
+@keyframes draw{to{stroke-dashoffset:0}}
+
+/* ---------- route chips + tables ---------- */
+
+.rchips{display:flex; gap:6px; flex-wrap:wrap; margin:0 0 12px}
+.rchip{background:none; border:1px solid var(--rule); color:var(--soft);
+  font:inherit; font-size:12px; padding:4px 10px; border-radius:2px;
+  cursor:pointer; white-space:nowrap}
+.rchip:hover{border-color:var(--trace); color:var(--trace)}
+.rchip[aria-pressed="true"]{border-color:var(--trace); color:var(--trace)}
+.rchip .p{opacity:.62; margin-left:5px}
+.rchip.baseline{opacity:.55}
+
+.scroll{overflow-x:auto}
+table{width:100%; border-collapse:collapse; font-size:13.5px}
+th{text-align:right; font-weight:500; color:var(--soft); font-size:12px;
+   padding:0 0 6px; border-bottom:1px solid var(--rule); white-space:nowrap}
+th:first-child{text-align:left}
+td{padding:11px 0; border-bottom:1px solid var(--hair); text-align:right;
+   vertical-align:baseline; white-space:nowrap}
+td:first-child{text-align:left; white-space:normal; padding-right:14px}
+tbody tr{cursor:pointer}
+tbody tr:hover td{color:var(--trace)}
+tr.sel td:first-child,tr.target td:first-child{
+  box-shadow:inset 3px 0 0 -1px var(--trace); padding-left:9px}
+.rid{font-weight:500}
+.meta{color:var(--soft); font-size:12px; display:block}
+.over{color:var(--floor)}
+.v{font-size:12.5px; color:var(--soft)}
+.v.good{color:var(--buy); font-weight:500}
+
+.group{margin-bottom:26px}
+.group:last-child{margin-bottom:0}
+.grouphead{font-family:Archivo,sans-serif; font-size:13px; font-weight:600;
+  margin:0 0 2px; letter-spacing:.005em; display:flex; align-items:baseline;
+  gap:8px}
+.grouphead .count{color:var(--soft); font-weight:500; font-size:11.5px}
+.glede{color:var(--soft); font-size:12px; margin:0 0 10px;
+  max-width:var(--measure)}
+.badge{display:inline-block; margin-left:7px; padding:1px 7px;
+  border:1px solid var(--buy); color:var(--buy); font-size:10px;
+  font-weight:500; border-radius:2px; letter-spacing:.03em;
+  vertical-align:1px; white-space:nowrap}
+
+/* ---------- legs + ladder ---------- */
+
+.legs{margin:14px 0 0; font-size:13px}
+.leg{display:flex; flex-wrap:wrap; gap:4px 10px; align-items:baseline;
+  padding:7px 0; border-bottom:1px solid var(--hair)}
+.leg:last-child{border-bottom:none}
+.leg b{min-width:60px; font-weight:500}
+.leg .time{font-variant-numeric:tabular-nums}
+.leg .time sup{color:var(--soft); font-size:10px}
+.leg .legmeta{color:var(--soft); margin-left:auto; white-space:nowrap}
+
+ol.ladder{list-style:none; padding:0; margin:0; font-size:13.5px}
+ol.ladder li{display:flex; gap:14px; padding:8px 0;
+  border-bottom:1px solid var(--hair)}
+ol.ladder li:last-child{border-bottom:none}
+ol.ladder b{font-weight:500; min-width:104px}
+ol.ladder span{color:var(--soft)}
+
+/* ---------- itinerary timeline ---------- */
+
+.days{margin:0; padding:0; list-style:none}
+.day{display:grid; grid-template-columns:84px 1fr; gap:0 16px;
+  padding:13px 0; border-bottom:1px solid var(--hair)}
+.day:last-child{border-bottom:none}
+.day.transit{opacity:.72}
+.dstamp{font-size:12px; color:var(--soft); line-height:1.4}
+.dstamp b{display:block; color:var(--ink); font-weight:500; font-size:13px}
+.dbody h4{margin:0 0 2px; font-size:14px; font-weight:600;
+  font-family:Archivo,sans-serif}
+.dbody p{margin:0; color:var(--soft); font-size:13px; max-width:var(--measure)}
+.dcity{display:inline-block; font-size:11px; font-weight:500; color:var(--soft);
+  letter-spacing:.04em; text-transform:uppercase}
+
+/* ---------- status pills: always a word, never colour alone ---------- */
+
+.pill{display:inline-block; padding:1px 7px; border-radius:2px;
+  font-size:10.5px; font-weight:500; letter-spacing:.03em;
+  border:1px solid var(--rule); color:var(--soft); white-space:nowrap}
+.pill.booked{border-color:var(--buy); color:var(--buy)}
+.pill.watch{border-color:var(--trace); color:var(--trace)}
+
+/* ---------- misc ---------- */
+
+.flag{display:inline-block; margin-bottom:22px; padding:7px 11px;
+  border:1px solid var(--floor); color:var(--floor); font-size:12.5px;
+  border-radius:2px}
+.empty{border:1px dashed var(--rule); border-radius:var(--radius);
+  padding:clamp(18px,3vw,26px); color:var(--soft); font-size:13px}
+.empty h3{font-family:Newsreader,Georgia,serif; font-weight:400;
+  font-size:21px; color:var(--ink); margin:0 0 6px}
+.empty code{font-size:12px}
+footer{margin-top:44px; color:var(--soft); font-size:12.5px;
+  border-top:1px solid var(--rule); padding-top:12px;
+  max-width:var(--shell)}
+a:focus-visible,[tabindex]:focus-visible,button:focus-visible{
+  outline:2px solid var(--trace); outline-offset:3px}
+
+@media (max-width:520px){
+  .day{grid-template-columns:1fr; gap:4px}
+  .dstamp b{display:inline; margin-right:6px}
+}

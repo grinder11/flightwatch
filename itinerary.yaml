@@ -1,0 +1,154 @@
+# ---------------------------------------------------------------------------
+# Trip skeleton -- the source for the site's Itinerary tab.
+# ---------------------------------------------------------------------------
+# Dates are fixed by the flights tracked in config.yaml: out Fri 2027-05-14
+# SFO->HND, back Sun 2027-05-23 KIX->SFO. Open jaw, no backtracking:
+# Tokyo -> Kyoto -> Osaka, flying home out of KIX.
+#
+# NOTE: those dates give EIGHT nights on the ground (15-22 May inclusive).
+# PROJECT_PLAN.md's "Tokyo 4, Kyoto 2, Osaka 1" is seven -- one short. The
+# spare night is parked in Tokyo below. Move it to Kyoto if you would rather
+# have three there; nights-per-city on the site are counted from this day
+# list, so editing a city here is the only change needed.
+#
+# `analyze.py --json` renders this to docs/itinerary.json. Nothing here is
+# consumed by the poller or the alert engine.
+# ---------------------------------------------------------------------------
+
+trip:
+  title: Japan 2027
+  party: 4
+  note: "Six PTO days, exactly at cap. Fares tracked on the Flights tab;
+         nothing on this page is booked until it says so."
+
+days:
+  - date: 2027-05-14
+    city: transit
+    title: "SFO → HND"
+    note: "Leaves Friday, lands Saturday -- the date line eats a day. Bags
+           checked through; Yamato-forward the big ones from the airport so
+           the first evening isn't spent hauling them."
+
+  - date: 2027-05-15
+    city: Tokyo
+    title: "Land Haneda, settle in"
+    note: "Arrival afternoon. Nothing scheduled -- Suica/Welcome Suica on the
+           phone, eat close to the hotel, sleep early to break the jet lag."
+
+  - date: 2027-05-16
+    city: Tokyo
+    title: "Central Tokyo on foot"
+    note: "First full day. Keep it walkable and low-commitment while everyone
+           is still on the wrong clock."
+
+  - date: 2027-05-17
+    city: Tokyo
+    title: "Sumo — Natsu basho, Ryōgoku"
+    note: "The one fixed-cost ticket. Natsu basho runs mid-May at the
+           Kokugikan; a weekday masu-seki box seats exactly four. Confirm the
+           2027 dates when the schedule publishes and move this day to match."
+
+  - date: 2027-05-18
+    city: Tokyo
+    title: "Open"
+    note: "Day trip if the group wants one -- Nikkō, Kamakura, Hakone all work
+           as a single out-and-back from Tokyo."
+
+  - date: 2027-05-19
+    city: Tokyo
+    title: "Open — last Tokyo day"
+    note: "The spare eighth night lives here. Pack for the Shinkansen; Yamato
+           the big bags ahead to the Kyoto hotel rather than carrying them."
+
+  - date: 2027-05-20
+    city: Kyoto
+    title: "Shinkansen to Kyoto"
+    note: "Morning train, ~2h20m on the Nozomi. Reserve point-to-point on
+           Smart EX -- this routing never earns a JR Pass back."
+
+  - date: 2027-05-21
+    city: Kyoto
+    title: "Kyoto, full day"
+    note: "The one day with no travel attached. Early start beats the coach
+           tours to anything well known."
+
+  - date: 2027-05-22
+    city: Osaka
+    title: "Kyoto → Osaka"
+    note: "Short hop, under an hour. Last night of the trip, and the one that
+           has to be near enough to KIX for a morning flight."
+
+  - date: 2027-05-23
+    city: transit
+    title: "KIX → SFO"
+    note: "Morning departure out of Kansai, home the same calendar day. Allow
+           for the airport being an hour out from central Osaka."
+
+# status: booked | open | watching
+# cost_usd is the party total, not per person. Leave null until it's real.
+bookings:
+  - what: "Flights — SFO→HND out, KIX→SFO back"
+    kind: flight
+    status: watching
+    when: "Dec 2026 – Feb 2027"
+    cost_usd: null
+    note: "Tracked on the Flights tab. Rule set in advance: at or below the
+           recalibrated floor on the target pairing, book same day without
+           consulting the group chat."
+
+  - what: "Tokyo hotel — 5 nights"
+    kind: hotel
+    city: Tokyo
+    status: open
+    when: "Feb – Mar 2027"
+    cost_usd: null
+    note: "Free-cancellation rate, booked early, re-checked in April."
+
+  - what: "Kyoto hotel — 2 nights"
+    kind: hotel
+    city: Kyoto
+    status: open
+    when: "Feb – Mar 2027"
+    cost_usd: null
+    note: "Free-cancellation rate. Kyoto sells out earlier than Tokyo."
+
+  - what: "Osaka hotel — 1 night"
+    kind: hotel
+    city: Osaka
+    status: open
+    when: "Feb – Mar 2027"
+    cost_usd: null
+    note: "Near enough to a KIX train for a morning departure."
+
+  - what: "Sumo — masu-seki box for four, Ryōgoku"
+    kind: event
+    city: Tokyo
+    status: open
+    when: "Apr 2027"
+    cost_usd: null
+    note: "On sale roughly a month ahead; the good boxes move fast. A weekday
+           box seats exactly four."
+
+  - what: "Shinkansen — Tokyo→Kyoto, Kyoto→Osaka"
+    kind: rail
+    status: open
+    when: "Apr 2027"
+    cost_usd: null
+    note: "Point-to-point on Smart EX. Skip the JR Pass -- this routing
+           doesn't earn it back."
+
+  - what: "eSIMs ×4"
+    kind: connectivity
+    status: open
+    when: "Apr 2027"
+    cost_usd: null
+    note: "Four individual eSIMs, not one shared pocket wifi -- the group
+           splits up during the day."
+
+  - what: "Yamato luggage forwarding, between hotels"
+    kind: logistics
+    status: open
+    when: "May 2027, at the front desk"
+    cost_usd: null
+    note: "Arranged on the day, hotel to hotel. Turns both train legs into
+           hand-luggage-only."

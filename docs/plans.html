@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plans — Japan 2027</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#eef1ef">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=Newsreader:opsz,wght@6..72,300;6..72,400;6..72,500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="site.css">
+</head>
+<body>
+<div class="topbar">
+  <div>
+    <div class="masthead">
+      <b><a href="index.html">flightwatch</a></b>
+      <span>SFO to Japan &middot; out Fri 14 May 2027 &middot; back Sun 23 May</span>
+    </div>
+    <nav class="tabs">
+      <a href="index.html">Flights</a>
+      <a href="itinerary.html">Itinerary</a>
+      <a href="plans.html" aria-current="page">Plans</a>
+    </nav>
+  </div>
+</div>
+
+<main>
+  <p class="verdict" id="verdict">Loading&hellip;</p>
+  <p class="sub" id="sub"></p>
+
+  <section>
+    <div class="stats" id="stats"></div>
+  </section>
+
+  <div id="shell"></div>
+
+  <footer>
+    <span id="stamp"></span><br>
+    Concrete detail plans live in <code>plans.yaml</code> in the repo root.
+    Until that file exists this tab stays in its empty state.
+  </footer>
+</main>
+
+<script src="site.js"></script>
+<script src="plans.js"></script>
+</body>
+</html>

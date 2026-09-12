@@ -77,25 +77,37 @@ notice.
 
 ## Phase 2 — Domain and site (December 2026, or any weekend you want a break)
 
-The page is built and in `docs/`. It reads `docs/data.json`, which the workflow
-regenerates on every run. It renders with sample state before any data exists,
-so you can look at it today.
+The site is built and in `docs/`, with three tabs — Flights (`data.json`, from
+the history), Itinerary (`itinerary.json`, from `itinerary.yaml`), and Plans
+(empty until there's a `plans.yaml`). The workflow regenerates all of them on
+every run. Every tab renders an empty state before its data exists.
 
-**Hosting, and one thing to get right.** GitHub Pages on a *private* repo
-requires a paid plan. You want the repo private — it holds your travel dates
-and price history. Three ways out:
+**Hosting is already settled: GitHub Pages, and nothing needs to change.** The
+repo is public, so Pages is free *including* a custom domain and automatic
+HTTPS — the earlier plan here recommended Cloudflare Pages only because a
+*private* repo would have needed a paid GitHub plan. That no longer applies.
+Cloudflare is worth revisiting only if the repo goes private again.
 
-| Option | Cost | Note |
-|---|---|---|
-| Cloudflare Pages, private repo | free | connects to private GitHub repos on the free plan; this is the one to take |
-| GitHub Pro + Pages | $4/mo | simplest, but you're paying for one page |
-| Public repo | free | fine if you don't mind four people's travel dates being public |
+Confirmed working: the poller's own commit already triggers a Pages rebuild
+(build history shows a `github-actions[bot]` push deploying clean), so the site
+is current within a minute of every run. Actions writes, Pages serves; the two
+only meet at a commit.
 
-**Domain.** Porkbun or Cloudflare Registrar. A `.xyz` or `.me` runs about
-$5–12 for the first year; Cloudflare sells at wholesale with no renewal
-markup, which matters more than the first-year price. Something short you'd
-type on a phone — the whole point is opening it from a Telegram alert. Point
-it at Cloudflare Pages, HTTPS is automatic.
+**Domain.** Porkbun or Cloudflare Registrar — Cloudflare sells at wholesale
+with no renewal markup, which matters more than the first-year price. Something
+short you'd type on a phone; the whole point is opening it from a Telegram
+alert. Then:
+
+1. Settings → Pages → Custom domain. GitHub commits a `CNAME` file — check it
+   lands in `docs/`, the publishing source, not the repo root.
+2. DNS: apex needs four A records (`185.199.108–111.153`) plus four AAAA
+   (`2606:50c0:800{0,1,2,3}::153`); a `www` subdomain needs one CNAME to
+   `grinder11.github.io`. No wildcard records.
+3. Wait for the certificate, then tick **Enforce HTTPS**.
+
+If Cloudflare is the registrar, that's fine — but leave those records **DNS
+only** (grey cloud). Proxying blocks GitHub's cert issuance, and "Flexible" SSL
+in front of an HTTPS-enforced Pages site gives a redirect loop.
 
 Optional once the page is live: add a build step that also renders a
 group-facing version with no dollar-thresholds visible, so you can share a

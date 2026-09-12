@@ -5,7 +5,10 @@ Read the accumulated history and tell you whether a number is actually good.
     python analyze.py              # summary of every route
     python analyze.py --days 90    # restrict window
     python analyze.py --chart fri14_sun23_hnd_kix
-    python analyze.py --json       # write docs/data.json for the site
+    python analyze.py --json       # write the site payloads and exit:
+                                   #   docs/data.json      <- history.csv
+                                   #   docs/itinerary.json <- itinerary.yaml
+                                   #   docs/plans.json     <- plans.yaml (if any)
 """
 
 import argparse
@@ -113,6 +116,95 @@ def build_payload(by_route, cfg):
     return out
 
 
+def build_itinerary_payload():
+    """Render itinerary.yaml into the shape the Itinerary tab reads.
+
+    Counts (nights per city, bookings by status, booked cost) are DERIVED from
+    the day and booking lists rather than restated in the YAML, so the file
+    can't disagree with itself. Returns None when there's no itinerary.yaml --
+    the tab renders an empty state in that case."""
+    src = ROOT / "itinerary.yaml"
+    if not src.exists():
+        return None
+    doc = yaml.safe_load(src.read_text()) or {}
+
+    days = []
+    for d in doc.get("days") or []:
+        city = str(d.get("city", "")).strip()
+        days.append({
+            "date": str(d.get("date", "")),
+            "city": city,
+            "title": (d.get("title") or "").strip(),
+            "note": " ".join((d.get("note") or "").split()),
+            "transit": city.lower() == "transit",
+        })
+    days.sort(key=lambda d: d["date"])
+
+    # nights per city, in the order the trip actually visits them
+    nights, order = {}, []
+    for d in days:
+        if d["transit"]:
+            continue
+        if d["city"] not in nights:
+            nights[d["city"]] = 0
+            order.append(d["city"])
+        nights[d["city"]] += 1
+
+    bookings, counts, booked_cost = [], defaultdict(int), 0
+    for b in doc.get("bookings") or []:
+        status = str(b.get("status", "open")).strip().lower()
+        cost = b.get("cost_usd")
+        bookings.append({
+            "what": (b.get("what") or "").strip(),
+            "kind": (b.get("kind") or "").strip(),
+            "city": (b.get("city") or "").strip(),
+            "status": status,
+            "when": (b.get("when") or "").strip(),
+            "cost_usd": cost,
+            "note": " ".join((b.get("note") or "").split()),
+        })
+        counts[status] += 1
+        if status == "booked" and isinstance(cost, (int, float)):
+            booked_cost += cost
+
+    return {
+        "generated": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "trip": doc.get("trip") or {},
+        "days": days,
+        "cities": [{"name": c, "nights": nights[c]} for c in order],
+        "nights_total": sum(nights.values()),
+        "bookings": bookings,
+        "counts": dict(counts),
+        "booked_cost_usd": booked_cost or None,
+    }
+
+
+def write_itinerary(dest_dir):
+    payload = build_itinerary_payload()
+    if payload is None:
+        return
+    dest = dest_dir / "itinerary.json"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(json.dumps(payload, indent=1))
+    print(f"wrote {dest} ({len(payload['days'])} days, "
+          f"{len(payload['bookings'])} bookings)")
+
+
+def write_plans(dest_dir):
+    """plans.yaml is a free-form list of sections, passed through as-is so the
+    Plans tab can be filled in without touching Python. Absent by design --
+    the tab renders its own empty state and documents the shape."""
+    src = ROOT / "plans.yaml"
+    if not src.exists():
+        return
+    doc = yaml.safe_load(src.read_text()) or {}
+    doc["generated"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    dest = dest_dir / "plans.json"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.write_text(json.dumps(doc, indent=1))
+    print(f"wrote {dest} ({len(doc.get('sections') or [])} sections)")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--days", type=int, default=365)
@@ -131,6 +223,8 @@ def main():
             dest.write_text(json.dumps(
                 {"generated": datetime.now(timezone.utc).isoformat(
                     timespec="seconds"), "routes": []}, indent=1))
+            write_itinerary(dest.parent)
+            write_plans(dest.parent)
         return
 
     cut = datetime.now(timezone.utc) - timedelta(days=args.days)
@@ -145,6 +239,8 @@ def main():
         dest.parent.mkdir(parents=True, exist_ok=True)
         dest.write_text(json.dumps(build_payload(by_route, cfg), indent=1))
         print(f"wrote {dest} ({len(by_route)} routes, {len(hist)} obs)")
+        write_itinerary(dest.parent)
+        write_plans(dest.parent)
         return
 
     if args.chart:
