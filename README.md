@@ -1,6 +1,6 @@
 # flightwatch
 
-A daily fare-polling tool for a specific trip: SFO to Japan, open jaw into
+An every-other-day fare-polling tool for a trip: SFO to Japan, open jaw into
 HND, out of KIX. It watches several date/routing variants of that trip at
 once (defined in `config.yaml`), keeps a permanent price history, and
 alerts on statistical triggers instead of raw price change.
@@ -45,10 +45,10 @@ file diffs cleanly, which a database wouldn't.
 A GitHub Actions workflow (`.github/workflows/track.yml`) runs `tracker.py`
 on a cron, then `analyze.py --json`, then commits the results. GitHub
 Actions runs this specifically because it can `git commit` its own output
-directly — the storage design depends on that. Cloudflare Pages hosts the
-separate, read-only `docs/` site instead (see `PROJECT_PLAN.md`); a
-Cloudflare Worker has no persistent filesystem and can't write back to git,
-so it isn't a fit for the poller itself, only for serving the static page.
+directly — the storage design depends on that. The read-only site is served
+by GitHub Pages from `main:/docs`, live at
+https://grinder11.github.io/flightwatch/ (`PROJECT_PLAN.md` weighs the
+Cloudflare Pages alternative, which was not taken).
 
 ## Fare data: SerpApi
 

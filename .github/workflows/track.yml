@@ -4,9 +4,10 @@ on:
   schedule:
     # 14:10 UTC = ~07:10 PT. Off the hour on purpose: GitHub queues
     # on-the-hour cron jobs heavily and they can run 10-30 min late.
-    # Every other day: SerpApi's ~100 free searches/month can't cover
-    # the 3 full_read routes' 2 requests each + 1 plain route daily
-    # (that's ~210/month), every-other-day keeps it near the cap (~105/month).
+    # Every other day, because SerpApi's free tier is ~100 searches/month
+    # and each full_read route costs 2 requests. See config.yaml's quota
+    # comment for the current mix's requests/poll -- it is over the free
+    # cap even at this cadence.
     - cron: "10 14 */2 * *"
   workflow_dispatch:
 

@@ -40,6 +40,15 @@ python tracker.py --replay data/history.csv    # re-score stored history against
   (was a bug — one connection each way used to score as 2 and would wrongly
   reject a normal itinerary). This is also how Google's own stops filter
   behaves: each leg must independently satisfy the cap.
+- **The duration caps drop offers client-side, and a route left with zero
+  offers is recorded as a failure.** `max_outbound_duration_min` (1200) is
+  passed to SerpApi as `max_duration` and covers the outbound leg only;
+  `max_total_duration_min` (2280) is checked in `tracker.py` after the
+  follow-up request, so it only ever applies to `full_read` routes.
+  Tightening either can therefore look like a provider outage in the logs —
+  and if it emptied every route, it would fire the "flightwatch is blind"
+  alert. `prefer_under_min` (1020) drops nothing; it only annotates the
+  alert text.
 - **SerpApi's multi-city (`type=3`) first request only sees the outbound
   leg** — `flights`/`total_duration` in that response describe leg 1 alone.
   `price` is already the true round-trip total (Google prices it assuming
@@ -73,11 +82,12 @@ python tracker.py --replay data/history.csv    # re-score stored history against
 - **`target: true` and `role: baseline` in `config.yaml` drive the site's
   categorization** (`docs/index.html`, "The Trip" / "7-Day Variants" /
   "Nonstop Variants" / "Baselines") and what counts toward the "cheapest
-  now" badge. A new route with neither field set defaults to a regular
-  candidate — fine for a real bookable variant, wrong for a comparison-only
-  route (it would then count toward "cheapest," which is exactly the bug
-  the badge exists to avoid). Set `role: baseline` deliberately on anything
-  that isn't a real option for this trip.
+  now" badge. Set `role: baseline` deliberately on anything that isn't a
+  real option for this trip — otherwise it counts toward "cheapest," which
+  is exactly the bug the badge exists to avoid. Note there is no bucket for
+  a plain candidate: `classify()` falls through to `lever`, so a new
+  non-nonstop, non-baseline route renders under "7-Day Variants" whatever
+  its `pto` says. Correct the site's buckets, don't mislabel the route.
 - **The alert engine assumes one observation per calendar day** —
   `min_observations`, `min_obs_in_window`, and every `*_window_days` are
   row counts, not distinct-day counts. Polling more than once a day (even
@@ -103,7 +113,9 @@ python tracker.py --replay data/history.csv    # re-score stored history against
   route AND `min_obs_in_window` (8) inside the specific window** — both
   gates matter; the window one exists because a route with old history plus
   one recent row could otherwise report a false "lowest in 30 days" against
-  a sample of one.
+  a sample of one. DROP is the exception: its window is a hardcoded 7 days
+  (no `*_window_days` key) and its depth gate is `min(min_obs_in_window, 4)`,
+  so it arms on 4 rows, not 8.
 - **Cooldown is keyed per route, not per route+rule.** Keying it per rule let
   NEW_LOW and PERCENTILE alternate down a slow decline and alert almost
   daily — see `VALIDATION.md` for the original measurement. Also respects
