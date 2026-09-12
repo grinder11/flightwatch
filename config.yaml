@@ -88,13 +88,28 @@ routes:
     note: "Round-trip baseline -- prices the open-jaw premium. Take the RT
            only if the open jaw costs more than about $120 extra."
 
+  # --- same round trip, nonstop forced both ways -------------------------
+  - id: fri14_sun23_rt_hnd_ns
+    origin: SFO
+    destination: HND
+    depart: 2027-05-14
+    return_origin: HND
+    return_destination: SFO
+    return: 2027-05-23
+    pto: 6
+    full_read: true    # confirms the return leg is genuinely nonstop too
+    nonstop: true
+    note: "Double-nonstop baseline -- same round trip as fri14_sun23_rt_hnd
+           but nonstop both ways. Prices the nonstop premium over the
+           stops-allowed RT baseline."
+
   # --- nonstop-only variants of the 3 date pairs above ------------------
   # TESTING/EXPLORATORY -- added to learn SerpApi's `stops` param behavior,
-  # not yet a decided permanent tracking set. Each doubles the request cost
-  # of its date pair (2 requests via full_read). With all 3 present, total
-  # quota is ~13 requests/poll (~195/month on the every-other-day cron),
-  # well over the ~100 free-tier cap -- revisit before leaving this running
-  # unattended: trim back down, or slow the cron further.
+  # not yet a decided permanent tracking set. Each costs 2 requests via
+  # full_read. With these 3 plus the double-nonstop RT baseline above,
+  # total quota is ~15 requests/poll (~225/month on the every-other-day
+  # cron), well over the ~100 free-tier cap -- revisit before leaving this
+  # running unattended: trim back down, or slow the cron further.
   - id: fri14_sun23_hnd_kix_ns
     origin: SFO
     destination: HND
