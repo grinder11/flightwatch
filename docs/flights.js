@@ -162,14 +162,12 @@ function renderRouteStats(r){
       ${sub ? `<span class="k" style="margin:4px 0 0">${sub}</span>` : ''}</div>`
   ).join('');
 
+  // Only the data-state caveat, no definitions.
   $('statnote').innerHTML = thin
     ? `Only ${r.n} observation${r.n === 1 ? '' : 's'} so far, so these all sit on `
       + 'top of each other. They separate as history accumulates; the alert '
       + 'rules stay disarmed until twelve.'
-    : `Percentiles are over this pairing's own history, not across routes. `
-      + `The 20th percentile (${usd(r.p20)}) is the price four out of five `
-      + `observations were above; the median (${usd(r.median)}) has half above `
-      + `and half below.`;
+    : '';
 }
 
 function render(data){
