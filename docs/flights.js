@@ -69,13 +69,14 @@ function drawChart(route, floor){
     // Collapse the frame rather than reserve 190px of empty plot area.
     svg.setAttribute('viewBox', `0 0 ${W} 26`);
     svg.innerHTML = `<text class="axis" x="0" y="16">Chart appears once this pairing has two days of history.</text>`;
-    return;
+    return false;
   }
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   const pts = route.series.slice(-120);
   const g = line(pts, W, H, PAD);
   const parts = [];
-  if(floor && floor >= g.lo && floor <= g.hi)
+  const drewFloor = !!floor && floor >= g.lo && floor <= g.hi;
+  if(drewFloor)
     parts.push(`<line class="floorline" x1="0" x2="${W}" y1="${g.Y(floor)}" y2="${g.Y(floor)}"/>`,
                `<text class="axis" x="0" y="${g.Y(floor)-6}">floor ${usd(floor)}</text>`);
   parts.push(`<line class="p20line" x1="0" x2="${W}" y1="${g.Y(route.p20)}" y2="${g.Y(route.p20)}"/>`);
@@ -85,6 +86,7 @@ function drawChart(route, floor){
   parts.push(`<text class="axis" x="0" y="${H-2}">${pts[0].d}</text>`);
   parts.push(`<text class="axis" x="${W}" y="${H-2}" text-anchor="end">${pts[pts.length-1].d}</text>`);
   svg.innerHTML = parts.join('');
+  return drewFloor;
 }
 
 function verdictLine(r, floor){
@@ -112,7 +114,7 @@ function verdictLine(r, floor){
 function select(id){
   const r = (DATA.routes||[]).find(x=>x.id===id);
   if(!r) return;
-  drawChart(r, DATA.floor);
+  const drewFloor = drawChart(r, DATA.floor);
   renderRouteStats(r);
   renderLegs(r);
   document.querySelectorAll('.rchip').forEach(c=>
@@ -124,7 +126,8 @@ function select(id){
   // being charted.
   $('chartcap').innerHTML =
     `<b>${r.path||r.id}</b>, ${r.depart} to ${r.back} &middot; ${r.pto ?? '—'} PTO days `
-    + `&middot; ${span}. Dashed line is the ${usd(DATA.floor)} book-on-sight floor.`;
+    + `&middot; ${span}.`
+    + (drewFloor ? ` Dashed line is the ${usd(DATA.floor)} book-on-sight floor.` : '');
 }
 
 function renderGroupRows(routes, cheapestId){
@@ -168,9 +171,8 @@ function renderRouteStats(r){
 
   // Only the data-state caveat, no definitions.
   $('statnote').innerHTML = thin
-    ? `Only ${r.n} observation${r.n === 1 ? '' : 's'} so far, so these all sit on `
-      + 'top of each other. They separate as history accumulates; the alert '
-      + 'rules stay disarmed until twelve.'
+    ? `Only ${r.n} observation${r.n === 1 ? '' : 's'} so far — too thin for these `
+      + 'to mean much yet. The alert rules stay disarmed until twelve.'
     : '';
 }
 
