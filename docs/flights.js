@@ -53,8 +53,12 @@ function bucket(routes){
 function line(pts, w, h, pad){
   const ys = pts.map(p=>p.p);
   const lo = Math.min(...ys), hi = Math.max(...ys), span = (hi-lo)||1;
+  // An unchanged price has no range to scale against. Centre it instead of
+  // letting (v-lo)/span collapse to 0, which pinned the line to the bottom
+  // of the plot and read as "rock bottom" rather than "flat".
+  const flat = hi === lo;
   const X = i => pad + (i/(Math.max(pts.length-1,1))) * (w-pad*2);
-  const Y = v => pad + (1-(v-lo)/span) * (h-pad*2);
+  const Y = v => flat ? h/2 : pad + (1-(v-lo)/span) * (h-pad*2);
   return {d: pts.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(p.p).toFixed(1)).join(' '),
           Y, X, lo, hi};
 }
