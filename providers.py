@@ -216,15 +216,46 @@ class Amadeus:
 class SerpApi:
     BASE = "https://serpapi.com/search"
 
+    # SerpApi reports an unusable key in the JSON `error` field, not an HTTP
+    # status, and the wording has changed before -- match loosely. Both of
+    # these mean "this key cannot serve requests," which is the only case
+    # worth failing over for; a malformed query must still raise.
+    ROTATE_ON = (
+        "run out of searches", "exceeded", "quota", "plan limit",
+        "invalid api key", "unauthorized",
+    )
+
     def __init__(self):
-        self.key = os.environ["SERPAPI_KEY"]
+        """Keys are tried in order, falling through to the next when one is
+        exhausted or rejected. Single-key setups are unchanged: SERPAPI_KEY on
+        its own still works exactly as before."""
+        self.keys = []
+        for k in os.environ.get("SERPAPI_KEYS", "").split(","):
+            if k.strip():
+                self.keys.append(k.strip())
+        for var in ("SERPAPI_KEY", "SERPAPI_KEY_2", "SERPAPI_KEY_3"):
+            k = os.environ.get(var, "").strip()
+            if k and k not in self.keys:
+                self.keys.append(k)
+        if not self.keys:
+            raise SystemExit(
+                "no SerpApi key: set SERPAPI_KEY (and optionally SERPAPI_KEY_2), "
+                "or SERPAPI_KEYS as a comma-separated list"
+            )
+        self.i = 0
+
+    @classmethod
+    def _should_rotate(cls, msg):
+        m = (msg or "").lower()
+        return any(s in m for s in cls.ROTATE_ON)
 
     def _base_params(self, route, cfg):
         # type=3 is multi-city. Verify param names against current SerpApi
         # docs before trusting a zero-result run.
+        # api_key is attached per-request in _get(), so a mid-run key switch
+        # applies to the follow-up request too.
         params = {
             "engine": "google_flights",
-            "api_key": self.key,
             "currency": cfg["currency"],
             "adults": cfg["adults"],
             "type": "3",
@@ -256,16 +287,42 @@ class SerpApi:
         return params
 
     def _get(self, params, route_id):
-        r = requests.get(self.BASE, params=params, timeout=TIMEOUT)
-        r.raise_for_status()
-        d = r.json()
-        if d.get("error"):
-            raise RuntimeError(f"serpapi: {d['error']}")
-        # Print what SerpApi actually searched -- multi_city_json silently
-        # not being honored is indistinguishable from a real price otherwise.
-        url = d.get("search_metadata", {}).get("google_flights_url")
-        print(f"[serpapi] {route_id}: {url}")
-        return d
+        """One request, retried on the next key if this one is spent.
+
+        The switch is sticky for the rest of the run -- once a key is known
+        exhausted there is no point paying a failed request per route to
+        rediscover it."""
+        while True:
+            n, total = self.i + 1, len(self.keys)
+            r = requests.get(
+                self.BASE, params=dict(params, api_key=self.keys[self.i]),
+                timeout=TIMEOUT,
+            )
+            try:
+                d = r.json()
+            except ValueError:
+                d = {}
+            err = d.get("error")
+            if not err and r.status_code >= 400:
+                err = f"http {r.status_code}: {r.text[:200]}"
+
+            if err and self._should_rotate(err) and self.i + 1 < total:
+                print(f"[warn] serpapi key {n}/{total} unusable ({err}); "
+                      f"switching to key {n + 1}")
+                self.i += 1
+                continue
+            if err:
+                # Only say "no keys left" when we actually ran out; a bad
+                # query fails on the first key without rotating at all.
+                spent = (" -- no keys left" if total > 1
+                         and self._should_rotate(err) else "")
+                raise RuntimeError(f"serpapi (key {n}/{total}){spent}: {err}")
+
+            # Print what SerpApi actually searched -- multi_city_json silently
+            # not being honored is indistinguishable from a real price otherwise.
+            url = d.get("search_metadata", {}).get("google_flights_url")
+            print(f"[serpapi] {route_id}: {url}")
+            return d
 
     @staticmethod
     def _parse_leg(d):

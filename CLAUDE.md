@@ -112,4 +112,10 @@ fired historically.
 - `source .venv/bin/activate` in every new shell — it isn't inherited.
 - `SERPAPI_KEY`, `TELEGRAM_TOKEN`, `TELEGRAM_CHAT_ID` go in a gitignored
   `.env`, loaded at import time (a no-op in CI, which uses Actions secrets).
+  See `.env.example` for the full list.
+- **SerpApi keys fail over.** `SERPAPI_KEY`, then `SERPAPI_KEY_2`/`_3` (or
+  `SERPAPI_KEYS` as one comma-separated list) are tried in order; a key
+  reported exhausted or rejected is skipped for the rest of that run, while a
+  malformed query still raises instead of burning the next key. One key alone
+  behaves exactly as before.
 - Only real observations belong in `data/history.csv`.

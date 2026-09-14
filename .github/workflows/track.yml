@@ -36,6 +36,9 @@ jobs:
           AMADEUS_KEY:      ${{ secrets.AMADEUS_KEY }}
           AMADEUS_SECRET:   ${{ secrets.AMADEUS_SECRET }}
           SERPAPI_KEY:      ${{ secrets.SERPAPI_KEY }}
+          # Optional second free account, tried when the first is exhausted.
+          # Unset is fine -- providers.py just sees one key.
+          SERPAPI_KEY_2:    ${{ secrets.SERPAPI_KEY_2 }}
           TELEGRAM_TOKEN:   ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python tracker.py
