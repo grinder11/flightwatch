@@ -1,5 +1,5 @@
 {
- "generated": "2026-09-23T18:23:04+00:00",
+ "generated": "2026-09-25T18:31:44+00:00",
  "floor": 900,
  "ceiling": 1500,
  "routes": [
@@ -13,12 +13,12 @@
    "depart": "2027-05-14",
    "back": "2027-05-24",
    "path": "SFO\u2192HND / KIX\u2192SFO",
-   "n": 7,
-   "now": 1322.0,
+   "n": 8,
+   "now": 1491.0,
    "min": 1315.0,
-   "p20": 1321.2,
+   "p20": 1321.4,
    "median": 1323.0,
-   "max": 1323.0,
+   "max": 1491.0,
    "carrier": "United",
    "stops": 1,
    "duration_min": 1475,
@@ -31,7 +31,7 @@
    "return_duration_min": 615,
    "return_depart": "2027-05-24 16:55",
    "return_arrive": "2027-05-24 11:10",
-   "verdict": "below median -- decent",
+   "verdict": "above median -- wait",
    "series": [
     {
      "d": "2026-09-12",
@@ -60,6 +60,10 @@
     {
      "d": "2026-09-23",
      "p": 1322.0
+    },
+    {
+     "d": "2026-09-25",
+     "p": 1491.0
     }
    ]
   },
@@ -73,12 +77,12 @@
    "depart": "2027-05-14",
    "back": "2027-05-24",
    "path": "SFO\u2192HND / KIX\u2192SFO",
-   "n": 7,
-   "now": 1607.0,
+   "n": 8,
+   "now": 1631.0,
    "min": 1530.0,
-   "p20": 1539.8,
+   "p20": 1549.6,
    "median": 1607.0,
-   "max": 1625.0,
+   "max": 1631.0,
    "carrier": "United",
    "stops": 0,
    "duration_min": 1305,
@@ -91,7 +95,7 @@
    "return_duration_min": 615,
    "return_depart": "2027-05-24 16:55",
    "return_arrive": "2027-05-24 11:10",
-   "verdict": "below median -- decent",
+   "verdict": "above median -- wait",
    "series": [
     {
      "d": "2026-09-12",
@@ -120,6 +124,10 @@
     {
      "d": "2026-09-23",
      "p": 1607.0
+    },
+    {
+     "d": "2026-09-25",
+     "p": 1631.0
     }
    ]
   },
@@ -193,12 +201,12 @@
    "depart": "2027-05-14",
    "back": "2027-05-23",
    "path": "SFO\u2192HND / KIX\u2192SFO",
-   "n": 7,
-   "now": 1607.0,
+   "n": 8,
+   "now": 1737.0,
    "min": 1530.0,
-   "p20": 1539.8,
+   "p20": 1549.6,
    "median": 1607.0,
-   "max": 1625.0,
+   "max": 1737.0,
    "carrier": "United",
    "stops": 0,
    "duration_min": 1305,
@@ -211,7 +219,7 @@
    "return_duration_min": 615,
    "return_depart": "2027-05-23 16:55",
    "return_arrive": "2027-05-23 11:10",
-   "verdict": "below median -- decent",
+   "verdict": "above median -- wait",
    "series": [
     {
      "d": "2026-09-12",
@@ -240,6 +248,10 @@
     {
      "d": "2026-09-23",
      "p": 1607.0
+    },
+    {
+     "d": "2026-09-25",
+     "p": 1737.0
     }
    ]
   },
@@ -253,20 +265,20 @@
    "depart": "2027-05-14",
    "back": "2027-05-23",
    "path": "SFO\u2192HND / HND\u2192SFO",
-   "n": 7,
-   "now": 1330.0,
+   "n": 8,
+   "now": 1697.0,
    "min": 1311.0,
-   "p20": 1311.2,
+   "p20": 1311.4,
    "median": 1312.0,
-   "max": 1330.0,
-   "carrier": "United",
+   "max": 1697.0,
+   "carrier": "American",
    "stops": null,
    "duration_min": null,
    "full_read": false,
    "outbound_stops": 1,
-   "outbound_duration_min": 860,
-   "outbound_depart": "2027-05-14 08:45",
-   "outbound_arrive": "2027-05-15 15:05",
+   "outbound_duration_min": 935,
+   "outbound_depart": "2027-05-14 08:15",
+   "outbound_arrive": "2027-05-15 15:50",
    "return_stops": null,
    "return_duration_min": null,
    "return_depart": "",
@@ -300,6 +312,10 @@
     {
      "d": "2026-09-23",
      "p": 1330.0
+    },
+    {
+     "d": "2026-09-25",
+     "p": 1697.0
     }
    ]
   },
@@ -313,25 +329,25 @@
    "depart": "2027-05-14",
    "back": "2027-05-23",
    "path": "SFO\u2192HND / HND\u2192SFO",
-   "n": 7,
-   "now": 1654.0,
+   "n": 8,
+   "now": 1782.0,
    "min": 1577.0,
-   "p20": 1586.8,
+   "p20": 1596.6,
    "median": 1654.0,
-   "max": 1672.0,
-   "carrier": "United",
+   "max": 1782.0,
+   "carrier": "JAL",
    "stops": 0,
-   "duration_min": 1275,
+   "duration_min": 1230,
    "full_read": true,
    "outbound_stops": 0,
-   "outbound_duration_min": 690,
-   "outbound_depart": "2027-05-14 10:25",
-   "outbound_arrive": "2027-05-15 13:55",
+   "outbound_duration_min": 670,
+   "outbound_depart": "2027-05-14 11:55",
+   "outbound_arrive": "2027-05-15 15:05",
    "return_stops": 0,
-   "return_duration_min": 585,
-   "return_depart": "2027-05-23 15:50",
-   "return_arrive": "2027-05-23 09:35",
-   "verdict": "below median -- decent",
+   "return_duration_min": 560,
+   "return_depart": "2027-05-23 16:20",
+   "return_arrive": "2027-05-23 09:40",
+   "verdict": "above median -- wait",
    "series": [
     {
      "d": "2026-09-12",
@@ -360,6 +376,10 @@
     {
      "d": "2026-09-23",
      "p": 1654.0
+    },
+    {
+     "d": "2026-09-25",
+     "p": 1782.0
     }
    ]
   },
@@ -373,25 +393,25 @@
    "depart": "2027-05-13",
    "back": "2027-05-23",
    "path": "SFO\u2192HND / KIX\u2192SFO",
-   "n": 7,
-   "now": 1322.0,
+   "n": 8,
+   "now": 1491.0,
    "min": 1322.0,
    "p20": 1323.0,
    "median": 1323.0,
-   "max": 1323.0,
-   "carrier": "United",
+   "max": 1491.0,
+   "carrier": "ANA/United out / United back",
    "stops": 1,
-   "duration_min": 1475,
+   "duration_min": 1815,
    "full_read": true,
    "outbound_stops": 1,
-   "outbound_duration_min": 860,
-   "outbound_depart": "2027-05-13 08:45",
-   "outbound_arrive": "2027-05-14 15:05",
+   "outbound_duration_min": 1200,
+   "outbound_depart": "2027-05-13 07:00",
+   "outbound_arrive": "2027-05-14 19:00",
    "return_stops": 0,
    "return_duration_min": 615,
    "return_depart": "2027-05-23 16:55",
    "return_arrive": "2027-05-23 11:10",
-   "verdict": "BEST EVER SEEN -- book it",
+   "verdict": "above median -- wait",
    "series": [
     {
      "d": "2026-09-12",
@@ -420,6 +440,10 @@
     {
      "d": "2026-09-23",
      "p": 1322.0
+    },
+    {
+     "d": "2026-09-25",
+     "p": 1491.0
     }
    ]
   },
@@ -433,12 +457,12 @@
    "depart": "2027-05-13",
    "back": "2027-05-23",
    "path": "SFO\u2192HND / KIX\u2192SFO",
-   "n": 7,
-   "now": 1368.0,
+   "n": 8,
+   "now": 1537.0,
    "min": 1368.0,
    "p20": 1368.0,
    "median": 1369.0,
-   "max": 1369.0,
+   "max": 1537.0,
    "carrier": "United",
    "stops": 0,
    "duration_min": 1305,
@@ -451,7 +475,7 @@
    "return_duration_min": 615,
    "return_depart": "2027-05-23 16:55",
    "return_arrive": "2027-05-23 11:10",
-   "verdict": "BEST EVER SEEN -- book it",
+   "verdict": "above median -- wait",
    "series": [
     {
      "d": "2026-09-12",
@@ -480,6 +504,10 @@
     {
      "d": "2026-09-23",
      "p": 1368.0
+    },
+    {
+     "d": "2026-09-25",
+     "p": 1537.0
     }
    ]
   }
